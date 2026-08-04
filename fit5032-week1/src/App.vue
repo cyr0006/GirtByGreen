@@ -11,7 +11,7 @@ import AryanCyrus from './components/AryanCyrus.vue'
 
     <div class="wrapper">
             <AryanCyrus msg="Hello! My name is Aryan" />
-      <HelloWorld msg="You did it!" />
+      <HelloWorld msg="I did it!" />
     </div>
   </header>
 
