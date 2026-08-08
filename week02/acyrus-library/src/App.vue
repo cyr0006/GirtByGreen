@@ -2,13 +2,15 @@
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
 import JSON from './components/JSON.vue'
+//week3
+import Form from "./components/LibraryRegistrationForm.vue"
 </script>
 
 <template>
-  JSON Lab
-  <div class="json-lab">
+  <!-- <div class="json-lab">
     <JSON />
-  </div>
+  </div> -->
+  <Form />
 </template>
 
 <style scoped>
