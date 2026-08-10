@@ -6,24 +6,24 @@
         <h1 class="text-center">User Information Form</h1>
         <form @submit.prevent="submitForm">
           <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-6">
               <label for="username" class="form-label">Username:</label><br>
               <input type="text" id="username" name="username" class="form-control" v-model="formData.username"><br>
             </div>
-            <div class="col-md-6">
+            <div class="col-6">
            
               <label for="password" class="form-label">Password:</label><br>
               <input type="password" id="password" name="password" class="form-control" v-model="formData.password"><br>
             </div>
           </div>
           <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-6">
               <div class="form-check">
-                <input type="checkbox" id="isAustralian" name="isAustralian" class="form-check-input" v-model="formData.isAustralian"><br>
-                <label for="isAustralian" class="form-check-label">Australian Resident?</label><br>
+                <input type="checkbox" id="isAustralian" name="isAustralian" class="form-check-input" v-model="formData.isAustralian">
+                <label for="isAustralian" class="form-check-label">Australian Resident?</label>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-6">
               <label for="gender" class="form-label">Gender</label><br>
               <select id="gender" class="form-select" name="gender" v-model="formData.gender">
                   <option value="female">Female</option>
@@ -110,4 +110,5 @@ const clearForm = () => {
    .list-group-item {
    padding: 10px;
    }
+
 </style>
