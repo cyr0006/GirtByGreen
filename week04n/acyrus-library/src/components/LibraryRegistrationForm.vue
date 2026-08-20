@@ -8,7 +8,7 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="username" class="form-label">Username:</label><br>
-              <input type="text" id="username" required name="username" class="form-control" v-model="formData.username"><br>
+              <input type="text" id="username" name="username" class="form-control" v-model="formData.username"><br>
             </div>
             <div class="col-6">
            
@@ -68,6 +68,7 @@
 <script setup>
 import { ref } from 'vue';
   
+//object to hold form data
 const formData = ref({
     username: '',
     password: '',
@@ -76,7 +77,16 @@ const formData = ref({
     gender: ''
 });
 
+//array to hold submitted cards
 const submittedCards = ref([]);
+
+const errors = ref({
+    username: null,
+    password: null,
+    isAustralian: null,
+    gender: null,
+    reason: null
+});
 
 const submitForm = () => {
     submittedCards.value.push({
