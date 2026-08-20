@@ -1,31 +1,42 @@
- /* Tag selectors */
- h1 {
-   text-align: center;
-   margin-top: 20px;
-   text-shadow: 4px 4px 8px rgba(247, 246, 246, 0.5);
- }
+/* Tag selectors */
+h1 {
+  text-align: center;
+  margin-top: 20px;
+}
 
- /* Class selectors */
- .form {
-   text-align: center;
-   margin-top: 50px;
- }
+button {
+  background-color: #4CAF50;
+  /* Green background */
+  color: white;
+  /* White text */
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
 
- /* ID selectors */
- #username:focus,
- #password:focus,
- #isAustralian:focus,
- #reason:focus {
-   border-color: #FF6347;
-   /* More obvious border color change (Tomato) */
-   background-color: #FFEBE8;
-   /* Light background color change */
-   transition: border-color 0.3s, background-color 0.5s;
-   outline: none;
- }
+/* Class selectors */
+.form {
+  text-align: center;
+  margin-top: 50px;
+}
 
- /* Attribute selectors */
- select[id="gender"] {
-   background-color: #d3d3d3;
-   /* Default background color set to gray */
- }
+/* ID selectors */
+#username:focus,
+#password:focus,
+#isAustralian:focus,
+#reason:focus {
+  border-color: #FF6347;
+  /* More obvious border color change (Tomato) */
+  background-color: #FFEBE8;
+  /* Light background color change */
+  transition: border-color 0.3s, background-color 0.5s;
+  outline: none;
+}
+
+/* Attribute selectors */
+select[id="gender"] {
+  background-color: #d3d3d3;
+  /* Default background color set to gray */
+
+}

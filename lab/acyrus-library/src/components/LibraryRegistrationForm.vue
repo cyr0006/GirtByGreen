@@ -4,6 +4,7 @@
     <div class="col-md-8 offset-md-2">
       <div class="form">
         <h1 class="text-center">User Information Form</h1>
+        <p class="text-center"> This form now includes validation. Registered users will be displayed in a table below the form.</p>
         <form @submit.prevent="submitForm">
           <div class="row mb-3">
             <div class="col-6">
@@ -21,21 +22,6 @@
             <br>
             </div>
             <div class="col-6">
-           
-              <label for="password" class="form-label">Password:</label><br>
-              <input type="password" id="password" name="password" class="form-control" v-model="formData.password" @blur="() => validatePassword(true)" @input="() => validatePassword(false)"><br>
-              <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
-            </div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-6">
-              <div class="form-check">
-                <input type="checkbox" id="isAustralian" name="isAustralian" class="form-check-input" v-model="formData.isAustralian">
-                <label for="isAustralian" class="form-check-label">Australian Resident?</label>
-                <div v-if="errors.isAustralian" class="text-danger">{{ errors.isAustralian }}</div>
-              </div>
-            </div>
-            <div class="col-6">
               <label for="gender" class="form-label">Gender</label><br>
               <select id="gender" class="form-select" name="gender" v-model="formData.gender">
                   <option value="female">Female</option>
@@ -45,6 +31,37 @@
               <div v-if="errors.gender" class="text-danger">{{ errors.gender }}</div>
             </div>
           </div>
+          <div class="row mb-3">
+            <div class="col-md-6 col-sm-6">
+              <label for="confirm-password" class="form-label">Confirm password</label>
+              <input
+                type="password"
+                class="form-control"
+                id="confirm-password"
+                v-model="formData.confirmPassword"
+              />
+              <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
+            </div>
+            <div class="col-md-6 col-sm-6">
+              <label for="confirm-password" class="form-label">Confirm password</label>
+              <input
+                type="password"
+                class="form-control"
+                id="confirm-password"
+                v-model="formData.confirmPassword"
+              />
+              <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
+            </div>
+            </div>
+              <div class="col-6 ">
+                <div class="form-check">
+                  <input type="checkbox" id="isAustralian" name="isAustralian" class="form-check-input" v-model="formData.isAustralian">
+                  <label for="isAustralian" class="form-check-label">Australian Resident?</label>
+                  <div v-if="errors.isAustralian" class="text-danger">{{ errors.isAustralian }}</div>
+                </div>
+            </div>
+
+
           <div class="mb-3">
             <label for="reason" class="form-label">Reason For Joining:</label><br>
             <textarea id="reason" name="reason" rows="3" class="form-control" v-model="formData.reason"></textarea><br>
@@ -91,6 +108,7 @@ import Row from 'primevue/row';                   // optional
 const formData = ref({
     username: '',
     password: '',
+    confirmPassword: '',
     isAustralian: false,
     reason: '',
     gender: ''
@@ -191,19 +209,25 @@ const validateReason = () => {
 </script>
 
 <style scoped>
-   .card {
-   border: 1px solid #ccc;
-   border-radius: 10px;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-   }
-   .card-header {
-   background-color: #275FDA;
-   color: white;
-   padding: 10px;
-   border-radius: 10px 10px 0 0;
-   }
-   .list-group-item {
-   padding: 10px;
-   }
+  .card {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .card-header {
+  background-color: #275FDA;
+  color: white;
+  padding: 10px;
+  border-radius: 10px 10px 0 0;
+  }
+  .list-group-item {
+  padding: 10px;
+  }
+
+  .form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 
 </style>

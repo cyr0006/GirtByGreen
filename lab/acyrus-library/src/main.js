@@ -1,9 +1,9 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
-// import 'primevue/resources/primevue.css'        // core styles
-import 'primeicons/primeicons.css'              // icons
-
+import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
+import './style.css'
+
 import { createApp } from 'vue'
 import App from './App.vue'
 
