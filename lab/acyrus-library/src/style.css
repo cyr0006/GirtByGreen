@@ -40,10 +40,3 @@ select[id="gender"] {
   /* Default background color set to gray */
 
 }
-
-footer {
-  text-align: center;
-  margin-top: 50px;
-  font-size: 0.9em;
-  color: #666;
-}
