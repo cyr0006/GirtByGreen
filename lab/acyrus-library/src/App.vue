@@ -1,7 +1,5 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-import JSON from './components/JSON.vue'
+import Header from './components/Header.vue'
 //week3
 import Form from "./components/LibraryRegistrationForm.vue"
 </script>
@@ -10,6 +8,7 @@ import Form from "./components/LibraryRegistrationForm.vue"
   <!-- <div class="json-lab">
     <JSON />
   </div> -->
+  <Header />
   <Form />
 </template>
 
