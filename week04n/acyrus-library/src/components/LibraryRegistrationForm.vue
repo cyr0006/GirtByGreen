@@ -102,6 +102,7 @@ const submittedCards = ref([]);
 const submitForm = () => {
   validateName(true);
   validatePassword(true);
+  validateIsAustralian();
   validateGender();
   validateReason();
 
@@ -160,6 +161,14 @@ const validatePassword = (blur) => {
     errors.value.password = 'Password must contain at least one special character.';
   } else {
     errors.value.password = null;
+  }
+}
+
+const validateIsAustralian = () => {
+  if (!formData.value.isAustralian) {
+    errors.value.isAustralian = 'Please confirm if you are an Australian resident.';
+  } else {
+    errors.value.isAustralian = null;
   }
 }
 
