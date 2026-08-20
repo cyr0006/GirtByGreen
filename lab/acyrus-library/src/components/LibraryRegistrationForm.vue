@@ -33,12 +33,14 @@
           </div>
           <div class="row mb-3">
             <div class="col-md-6 col-sm-6">
-              <label for="confirm-password" class="form-label">Confirm password</label>
+              <label for="confirm-password" class="form-label">Password</label>
               <input
                 type="password"
                 class="form-control"
                 id="confirm-password"
-                v-model="formData.confirmPassword"
+                v-model="formData.password"
+                @blur="() => validatePassword(false)"
+                @input="() => validatePassword(false)"
               />
               <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
             </div>
@@ -49,8 +51,10 @@
                 class="form-control"
                 id="confirm-password"
                 v-model="formData.confirmPassword"
+                @blur="() => validateConfirmPassword(false)"
+                @input="() => validateConfirmPassword(false)"
               />
-              <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
+              <div v-if="errors.confirmPassword" class="text-danger">{{ errors.confirmPassword }}</div>
             </div>
             </div>
               <div class="col-6 ">
@@ -64,8 +68,18 @@
 
           <div class="mb-3">
             <label for="reason" class="form-label">Reason For Joining:</label><br>
-            <textarea id="reason" name="reason" rows="3" class="form-control" v-model="formData.reason"></textarea><br>
+            <textarea 
+              id="reason" 
+              name="reason" 
+              rows="3" 
+              class="form-control" 
+              v-model="formData.reason" 
+              @blur="() => friendInReason(false)"
+              @value="() => validateReason(false)"
+              @input="() => validateReason(false)">
+            </textarea><br>
             <div v-if="errors.reason" class="text-danger">{{ errors.reason }}</div>
+            <div v-if="greenMessages.reason" class="text-success">{{ greenMessages.reason }}</div>
           </div>
           <div class="text-center">
             <button type="submit" class="btn btn-primary me-2">Submit</button>
@@ -97,6 +111,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ColumnGroup from 'primevue/columngroup';   // optional
 import Row from 'primevue/row';                   // optional
+import { input } from '@primeuix/themes/aura/iftalabel';
 
 //data table
 
@@ -120,11 +135,13 @@ const submittedCards = ref([]);
 const submitForm = () => {
   validateName(true);
   validatePassword(true);
+  validateConfirmPassword();
   validateIsAustralian();
   validateGender();
   validateReason();
+  friendInReason();
 
-  if(!errors.value.username && !errors.value.password && !errors.value.isAustralian && !errors.value.gender && !errors.value.reason) {
+  if(!errors.value.username && !errors.value.password && !errors.value.confirmPassword && !errors.value.isAustralian && !errors.value.gender && !errors.value.reason) {
     submittedCards.value.push({...formData.value });
     clearForm();
   }
@@ -136,6 +153,7 @@ const clearForm = () => {
     formData.value = {
         username: '',
         password: '',
+        confirmPassword: '',
         isAustralian: false,
         reason: '',
         gender: ''
@@ -146,9 +164,13 @@ const clearForm = () => {
 const errors = ref({
     username: null,
     password: null,
+    confirmPassword: null,
     isAustralian: null,
     gender: null,
     reason: null
+});
+const greenMessages = ref({
+  reason: null
 });
 
 const validateName = (blur) => {
@@ -199,10 +221,25 @@ const validateGender = () => {
 }
 
 const validateReason = () => {
-  if (!formData.value.reason) {
-    errors.value.reason = 'Please provide a reason for joining.';
+  if (formData.value.reason.length < 10) {
+    errors.value.reason = 'Please provide a reason for joining (at least 10 characters).';
   } else {
     errors.value.reason = null;
+  }
+}
+const friendInReason = () => {
+  if (formData.value.reason.toLowerCase().includes('friend')) {
+    greenMessages.value.reason = 'It is good to have a friend.';
+  } else {
+    greenMessages.value.reason = null;
+  }
+}
+
+const validateConfirmPassword = () => {
+  if (formData.value.confirmPassword !== formData.value.password) {
+    errors.value.confirmPassword = 'Passwords do not match.';
+  } else {
+    errors.value.confirmPassword = null;
   }
 }
 
