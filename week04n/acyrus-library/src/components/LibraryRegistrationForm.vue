@@ -8,12 +8,23 @@
           <div class="row mb-3">
             <div class="col-6">
               <label for="username" class="form-label">Username:</label><br>
-              <input type="text" id="username" name="username" class="form-control" v-model="formData.username"><br>
+              <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              class="form-control" 
+              v-model="formData.username" 
+              @blur="() => validateName(true)" 
+              @input="() => validateName(false)"
+            >
+            <div v-if="errors.username" class="text-danger">{{ errors.username }}</div>
+            <br>
             </div>
             <div class="col-6">
            
               <label for="password" class="form-label">Password:</label><br>
-              <input type="password" id="password" name="password" class="form-control" v-model="formData.password"><br>
+              <input type="password" id="password" name="password" class="form-control" v-model="formData.password" @blur="() => validatePassword(true)" @input="() => validatePassword(false)"><br>
+              <div v-if="errors.password" class="text-danger">{{ errors.password }}</div>
             </div>
           </div>
           <div class="row mb-3">
@@ -21,6 +32,7 @@
               <div class="form-check">
                 <input type="checkbox" id="isAustralian" name="isAustralian" class="form-check-input" v-model="formData.isAustralian">
                 <label for="isAustralian" class="form-check-label">Australian Resident?</label>
+                <div v-if="errors.isAustralian" class="text-danger">{{ errors.isAustralian }}</div>
               </div>
             </div>
             <div class="col-6">
@@ -30,11 +42,13 @@
                   <option value="male">Male</option>
                   <option value="other">Other</option>
               </select>
+              <div v-if="errors.gender" class="text-danger">{{ errors.gender }}</div>
             </div>
           </div>
           <div class="mb-3">
             <label for="reason" class="form-label">Reason For Joining:</label><br>
             <textarea id="reason" name="reason" rows="3" class="form-control" v-model="formData.reason"></textarea><br>
+            <div v-if="errors.reason" class="text-danger">{{ errors.reason }}</div>
           </div>
           <div class="text-center">
             <button type="submit" class="btn btn-primary me-2">Submit</button>
@@ -68,6 +82,7 @@
 <script setup>
 import { ref } from 'vue';
   
+//Form Data 
 //object to hold form data
 const formData = ref({
     username: '',
@@ -80,18 +95,18 @@ const formData = ref({
 //array to hold submitted cards
 const submittedCards = ref([]);
 
-const errors = ref({
-    username: null,
-    password: null,
-    isAustralian: null,
-    gender: null,
-    reason: null
-});
-
 const submitForm = () => {
-    submittedCards.value.push({
-        ...formData.value
-    });
+  validateName(true);
+  validatePassword(true);
+  validateGender();
+  validateReason();
+
+  if(!errors.value.username && !errors.value.password && !errors.value.isAustralian && !errors.value.gender && !errors.value.reason) {
+    submittedCards.value.push({...formData.value });
+    clearForm();
+  }
+  
+
 };
 
 const clearForm = () => {
@@ -103,6 +118,63 @@ const clearForm = () => {
         gender: ''
     };
 };
+
+//Form validation
+const errors = ref({
+    username: null,
+    password: null,
+    isAustralian: null,
+    gender: null,
+    reason: null
+});
+
+const validateName = (blur) => {
+  if (formData.value.username.length < 3) {
+    if (blur) errors.value.username = 'Username must be at least 3 characters long.';
+    } else {
+    errors.value.username = null;
+  }
+}
+
+const validatePassword = (blur) => {
+  const password = formData.value.password;
+  const minLength = 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  if (password.length<minLength) {
+    if (blur) errors.value.password = 'Password must be at least 8 characters long.';
+  } else if (!hasUpperCase) {
+    errors.value.password = 'Password must contain at least one uppercase letter.';
+  } else if (!hasLowerCase) {
+    errors.value.password = 'Password must contain at least one lowercase letter.';
+  } else if (!hasNumber) {
+    errors.value.password = 'Password must contain at least one number.';
+  } else if (!hasSpecialChar) {
+    errors.value.password = 'Password must contain at least one special character.';
+  } else {
+    errors.value.password = null;
+  }
+}
+
+const validateGender = () => {
+  if (!formData.value.gender) {
+    errors.value.gender = 'Please select a gender.';
+  } else {
+    errors.value.gender = null;
+  }
+}
+
+const validateReason = () => {
+  if (!formData.value.reason) {
+    errors.value.reason = 'Please provide a reason for joining.';
+  } else {
+    errors.value.reason = null;
+  }
+}
+
 </script>
 
 <style scoped>
