@@ -17,7 +17,7 @@ button {
 
 /* Class selectors */
 .form {
-  text-align: center;
+  text-align: left;
   margin-top: 50px;
 }
 
@@ -39,4 +39,11 @@ select[id="gender"] {
   background-color: #d3d3d3;
   /* Default background color set to gray */
 
+}
+
+footer {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 0.9em;
+  color: #666;
 }
