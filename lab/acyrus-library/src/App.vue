@@ -1,15 +1,19 @@
 <script setup>
 import Header from './components/Header.vue'
 //week3
-import Form from "./components/LibraryRegistrationForm.vue"
+import Form from './components/LibraryRegistrationForm.vue'
 </script>
 
 <template>
   <!-- <div class="json-lab">
     <JSON />
   </div> -->
-  <Header />
-  <Form />
+  <div class="main-container">
+    <Header />
+    <main class="main-box">
+      <router-view></router-view>
+    </main>
+  </div>
 </template>
 
 <style scoped>
