@@ -1,19 +1,36 @@
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import Menubar from 'primevue/menubar'
+import Button from 'primevue/button'
+import User from '@primeicons/vue/user'
+import { useAuth } from '../stores/auth'
 
-const items = ref([
-  {
-    label: 'Home',
-    icon: 'pi pi-home',
-    route: '/',
-  },
-  {
-    label: 'about',
-    icon: 'pi pi-star',
-    route: '/about',
-  },
-])
+const router = useRouter()
+const { isLoggedIn, logout } = useAuth()
+
+const items = computed(() => {
+  const base = [
+    {
+      label: 'Home',
+      icon: 'pi pi-home',
+      route: '/',
+    },
+  ]
+  if (isLoggedIn.value) {
+    base.push({
+      label: 'about',
+      icon: 'pi pi-star',
+      route: '/about',
+    })
+  }
+  return base
+})
+
+const handleLogout = () => {
+  logout()
+  router.push('/login')
+}
 </script>
 <template>
   <Menubar :model="items">
@@ -39,6 +56,15 @@ const items = ref([
         <span :class="item.icon" />
         <span class="ml-2">{{ item.label }}</span>
       </a>
+    </template>
+    <template #end>
+      <Button
+        v-if="isLoggedIn"
+        label="Log out"
+        icon="pi pi-sign-out"
+        @click="handleLogout"
+      />
+      <Button v-else label="Log In" icon="pi pi-user" @click="$router.push('/login')" />
     </template>
   </Menubar>
 </template>
