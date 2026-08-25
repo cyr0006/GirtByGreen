@@ -1,16 +1,17 @@
-import PrimeVue from 'primevue/config';
-import Nora from '@primeuix/themes/nora';
 import { createApp } from 'vue';
-
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import './style.css';
 import App from './App.vue'
+
 
 
 const app = createApp(App);
 app.use(PrimeVue, {
     theme: {
-        preset: Nora
+        preset: Aura
+        
     },
-
 });
 
 app.mount('#app')

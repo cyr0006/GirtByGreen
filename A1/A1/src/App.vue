@@ -1,10 +1,11 @@
 <script setup>
-import mybutton from './components/Button.vue'
+import Home from './views/Home.vue'
 </script>
 
 <template>
-  <main></main>
-  <mybutton></mybutton>
+  <main>
+    <Home></Home>
+  </main>
 </template>
 
 <style scoped>
