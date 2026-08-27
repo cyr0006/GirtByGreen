@@ -46,8 +46,8 @@
 </template>
 
 <script setup>
-//PrimeVue navbar imports
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Menubar from 'primevue/menubar'
 import Badge from 'primevue/badge'
 import InputText from 'primevue/inputtext'
@@ -56,15 +56,23 @@ import Ripple from 'primevue/ripple'
 import AngleDown from '@primeicons/vue/angle-down'
 import AngleRight from '@primeicons/vue/angle-right'
 import Bolt from '@primeicons/vue/bolt'
-import Home from '@primeicons/vue/home'
+import HomeIcon from '@primeicons/vue/home'
 import Pencil from '@primeicons/vue/pencil'
 import Search from '@primeicons/vue/search'
 import Server from '@primeicons/vue/server'
 
+const router = useRouter()
+
 const items = ref([
   {
     label: 'Home',
-    icon: Home,
+    icon: HomeIcon,
+    command: () => router.push('/'),
+  },
+  {
+    label: 'Log In',
+    icon: AngleDown,
+    command: () => router.push('/login'),
   },
   {
     label: 'Projects',
@@ -75,11 +83,13 @@ const items = ref([
         label: 'Core',
         icon: Bolt,
         shortcut: '⌘+S',
+        command: () => router.push('/projects/core'),
       },
       {
         label: 'Blocks',
         icon: Server,
         shortcut: '⌘+B',
+        command: () => router.push('/projects/blocks'),
       },
       {
         separator: true,
@@ -88,22 +98,9 @@ const items = ref([
         label: 'UI Kit',
         icon: Pencil,
         shortcut: '⌘+U',
+        command: () => router.push('/projects/ui-kit'),
       },
     ],
   },
 ])
-
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-
-const router = useRouter()
-const route = useRoute()
-const search = computed({
-  get() {
-    return route.query.search ?? ''
-  },
-  set(search) {
-    router.replace({ query: { search } })
-  },
-})
 </script>

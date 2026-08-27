@@ -34,6 +34,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import Card from 'primevue/card'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import Label from 'primevue/label'
 
 const email = ref('')
 const password = ref('')

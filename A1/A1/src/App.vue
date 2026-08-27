@@ -1,10 +1,10 @@
 <script setup>
-import Home from './views/Home.vue'
+import Navbar from './components/navbar.vue'
 </script>
 
 <template>
   <div class="main-container">
-    <Header />
+    <Navbar />
     <main class="main-box">
       <router-view></router-view>
     </main>

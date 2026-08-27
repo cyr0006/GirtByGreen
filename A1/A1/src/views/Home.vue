@@ -1,7 +1,5 @@
-<script setup>
-import Navbar from '../components/navbar.vue'
-</script>
-
 <template>
-  <Navbar></Navbar>
+  <div>
+    <h1>Home</h1>
+  </div>
 </template>
