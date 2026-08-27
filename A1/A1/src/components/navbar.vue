@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+//PrimeVue navbar imports
 import { ref } from 'vue'
 import Menubar from 'primevue/menubar'
 import Badge from 'primevue/badge'
@@ -91,4 +92,18 @@ const items = ref([
     ],
   },
 ])
+
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+const search = computed({
+  get() {
+    return route.query.search ?? ''
+  },
+  set(search) {
+    router.replace({ query: { search } })
+  },
+})
 </script>

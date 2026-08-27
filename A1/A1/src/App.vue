@@ -3,9 +3,12 @@ import Home from './views/Home.vue'
 </script>
 
 <template>
-  <main>
-    <Home></Home>
-  </main>
+  <div class="main-container">
+    <Header />
+    <main class="main-box">
+      <router-view></router-view>
+    </main>
+  </div>
 </template>
 
 <style scoped>
