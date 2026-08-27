@@ -1,5 +1,12 @@
 @import "tailwindcss";
 @import './assets/base.css';
+@theme {
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1400px;
+}
 
 #app {
   font-weight: normal;
@@ -12,3 +19,6 @@
   width: 100%;
   min-height: calc(100vh - 3rem);
 }
+
+
+

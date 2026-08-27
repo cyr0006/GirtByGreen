@@ -24,6 +24,7 @@
         <a v-ripple class="flex items-center px-3 py-2 cursor-pointer gap-2" v-bind="props.action">
           <span class="text-sm">{{ item.label }}</span>
           <Badge v-if="item.badge" :class="root ? '' : 'ms-auto'" :value="item.badge" />
+          <!--ADD SOME ITEM.ICON HERE TODO-->
           <span
             v-if="item.shortcut"
             class="ms-auto border border-surface rounded-sm bg-emphasis text-muted-color text-xs p-1"
@@ -35,10 +36,7 @@
       <template #end>
         <div class="flex items-center gap-2">
           <InputText placeholder="Search" type="text" class="w-36" />
-          <Avatar
-            image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
-            shape="circle"
-          />
+          <Avatar icon="User" shape="circle" />
         </div>
       </template>
     </Menubar>
@@ -54,7 +52,7 @@ import InputText from 'primevue/inputtext'
 import Avatar from 'primevue/avatar'
 import Ripple from 'primevue/ripple'
 import AngleDown from '@primeicons/vue/angle-down'
-import AngleRight from '@primeicons/vue/angle-right'
+import User from '@primeicons/vue/user'
 import Bolt from '@primeicons/vue/bolt'
 import HomeIcon from '@primeicons/vue/home'
 import Pencil from '@primeicons/vue/pencil'
@@ -76,7 +74,7 @@ const items = ref([
     command: () => router.push('/login'),
   },
   {
-    label: 'Ev  ents',
+    label: 'Events',
     icon: Calendar,
     command: () => router.push('/events'),
   },
