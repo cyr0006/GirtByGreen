@@ -81,6 +81,7 @@ const categorySeverity = {
 const categories = ['Outdoors', 'Workshop', 'Online', 'Community']
 
 const showDialog = ref(false)
+const errors = ref({})
 const newEvent = ref({
   title: '',
   date: '',
@@ -92,10 +93,46 @@ const newEvent = ref({
 
 function openDialog() {
   newEvent.value = { title: '', date: '', location: '', description: '', spots: 0, category: '' }
+  errors.value = {}
   showDialog.value = true
 }
 
+function validate() {
+  errors.value = {}
+
+  if (!newEvent.value.title.trim()) {
+    errors.value.title = 'Title is required.'
+  }
+
+  if (!newEvent.value.date) {
+    errors.value.date = 'Date is required.'
+  } else if (isNaN(Date.parse(newEvent.value.date))) {
+    errors.value.date = 'Please enter a valid date.'
+  }
+
+  if (!newEvent.value.location.trim()) {
+    errors.value.location = 'Location is required.'
+  }
+
+  if (!newEvent.value.description.trim()) {
+    errors.value.description = 'Description is required.'
+  }
+
+  if (!newEvent.value.spots || newEvent.value.spots <= 0) {
+    errors.value.spots = 'Spots must be a positive number.'
+  } else if (!Number.isInteger(newEvent.value.spots)) {
+    errors.value.spots = 'Spots must be a whole number.'
+  }
+
+  if (!newEvent.value.category) {
+    errors.value.category = 'Category is required.'
+  }
+
+  return Object.keys(errors.value).length === 0
+}
+
 function addEvent() {
+  if (!validate()) return
   events.value.push({
     id: events.value.length + 1,
     ...newEvent.value,
@@ -123,7 +160,7 @@ function formatDate(dateStr) {
       <Button icon="pi pi-plus" label="Add Event" @click="openDialog" />
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card v-for="event in events" :key="event.id" class="shadow-sm">
         <template #title>
           <div class="flex items-start justify-between gap-2">
@@ -154,26 +191,32 @@ function formatDate(dateStr) {
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Title</label>
           <InputText v-model="newEvent.title" placeholder="Event title" />
+          <small v-if="errors.title" class="text-red-500">{{ errors.title }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Date</label>
           <InputText v-model="newEvent.date" type="date" />
+          <small v-if="errors.date" class="text-red-500">{{ errors.date }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Location</label>
           <InputText v-model="newEvent.location" placeholder="Event location" />
+          <small v-if="errors.location" class="text-red-500">{{ errors.location }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Description</label>
           <Textarea v-model="newEvent.description" rows="3" placeholder="Event description" />
+          <small v-if="errors.description" class="text-red-500">{{ errors.description }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Available Spots</label>
           <InputText v-model.number="newEvent.spots" type="number" />
+          <small v-if="errors.spots" class="text-red-500">{{ errors.spots }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Category</label>
           <Select v-model="newEvent.category" :options="categories" placeholder="Select a category" />
+          <small v-if="errors.category" class="text-red-500">{{ errors.category }}</small>
         </div>
       </div>
       <template #footer>
