@@ -60,6 +60,7 @@ import HomeIcon from '@primeicons/vue/home'
 import Pencil from '@primeicons/vue/pencil'
 import Search from '@primeicons/vue/search'
 import Server from '@primeicons/vue/server'
+import Calendar from '@primeicons/vue/calendar'
 
 const router = useRouter()
 
@@ -73,6 +74,11 @@ const items = ref([
     label: 'Log In',
     icon: AngleDown,
     command: () => router.push('/login'),
+  },
+  {
+    label: 'Events',
+    icon: Calendar,
+    command: () => router.push('/events'),
   },
   {
     label: 'Projects',
