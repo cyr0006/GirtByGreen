@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import Select from 'primevue/select'
 
 const events = ref([
   {
@@ -47,7 +51,7 @@ const events = ref([
   },
   {
     id: 5,
-    title: 'Farmers MarketVolunteer Day',
+    title: 'Farmers Market Volunteer Day',
     date: '2026-10-20',
     location: 'Queen Victoria Market',
     description:
@@ -74,6 +78,31 @@ const categorySeverity = {
   Community: 'primary',
 }
 
+const categories = ['Outdoors', 'Workshop', 'Online', 'Community']
+
+const showDialog = ref(false)
+const newEvent = ref({
+  title: '',
+  date: '',
+  location: '',
+  description: '',
+  spots: 0,
+  category: '',
+})
+
+function openDialog() {
+  newEvent.value = { title: '', date: '', location: '', description: '', spots: 0, category: '' }
+  showDialog.value = true
+}
+
+function addEvent() {
+  events.value.push({
+    id: events.value.length + 1,
+    ...newEvent.value,
+  })
+  showDialog.value = false
+}
+
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-AU', {
     weekday: 'short',
@@ -86,14 +115,15 @@ function formatDate(dateStr) {
 
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
-    <h1 class="text-4xl font-bold text-center mb-4">Upcoming Events</h1>
-    <p class="text-surface-500 text-center mb-12">
-      Browse our upcoming community events. Sign up to get involved and make a difference.
-    </p>
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold mb-4">Upcoming Events</h1>
+      <p class="text-surface-500 mb-6">
+        Browse our upcoming community events. Sign up to get involved and make a difference.
+      </p>
+      <Button icon="pi pi-plus" label="Add Event" @click="openDialog" />
+    </div>
 
-    <div
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center justify-center"
-    >
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
       <Card v-for="event in events" :key="event.id" class="shadow-sm">
         <template #title>
           <div class="flex items-start justify-between gap-2">
@@ -118,5 +148,38 @@ function formatDate(dateStr) {
         </template>
       </Card>
     </div>
+
+    <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
+      <div class="flex flex-col gap-4 mt-4">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Title</label>
+          <InputText v-model="newEvent.title" placeholder="Event title" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Date</label>
+          <InputText v-model="newEvent.date" type="date" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Location</label>
+          <InputText v-model="newEvent.location" placeholder="Event location" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Description</label>
+          <Textarea v-model="newEvent.description" rows="3" placeholder="Event description" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Available Spots</label>
+          <InputText v-model.number="newEvent.spots" type="number" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Category</label>
+          <Select v-model="newEvent.category" :options="categories" placeholder="Select a category" />
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" text @click="showDialog = false" />
+        <Button label="Add Event" @click="addEvent" />
+      </template>
+    </Dialog>
   </div>
 </template>
