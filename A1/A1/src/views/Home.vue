@@ -1,5 +1,6 @@
 <template>
-  <div>
-    <h1>Home</h1>
-  </div>
+  <hero></hero>
 </template>
+<script setup>
+import hero from '@/components/hero.vue'
+</script>

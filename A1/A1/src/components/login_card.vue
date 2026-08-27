@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center">
+  <div class="flex justify-center items-center min-h-[calc(100vh-80px)]">
     <Card class="max-w-sm w-full">
       <template #title>Welcome back</template>
       <template #subtitle>Sign in with your email to continue.</template>
