@@ -161,7 +161,7 @@ function formatDate(dateStr) {
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card v-for="event in events" :key="event.id" class="shadow-sm">
+      <Card v-for="event in events" :key="event.id" class="shadow-sm h-full flex flex-col">
         <template #title>
           <div class="flex items-start justify-between gap-2">
             <span>{{ event.title }}</span>
@@ -175,15 +175,16 @@ function formatDate(dateStr) {
           </div>
         </template>
         <template #content>
-          <p class="text-surface-600 text-sm leading-relaxed">{{ event.description }}</p>
+          <p class="text-surface-600 text-sm leading-relaxed flex-1">{{ event.description }}</p>
         </template>
         <template #footer>
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between mt-auto">
             <span class="text-sm text-surface-400">{{ event.spots }} spots left</span>
             <Button label="Register" size="small" />
           </div>
         </template>
       </Card>
+      </div>
     </div>
 
     <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
