@@ -215,7 +215,11 @@ function formatDate(dateStr) {
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Category</label>
-          <Select v-model="newEvent.category" :options="categories" placeholder="Select a category" />
+          <Select
+            v-model="newEvent.category"
+            :options="categories"
+            placeholder="Select a category"
+          />
           <small v-if="errors.category" class="text-red-500">{{ errors.category }}</small>
         </div>
       </div>

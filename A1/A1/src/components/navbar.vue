@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="w-full">
     <Menubar :model="items">
       <template #start>
         <svg
@@ -76,7 +76,7 @@ const items = ref([
     command: () => router.push('/login'),
   },
   {
-    label: 'Events',
+    label: 'Ev  ents',
     icon: Calendar,
     command: () => router.push('/events'),
   },
