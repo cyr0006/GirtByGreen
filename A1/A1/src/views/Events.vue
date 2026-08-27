@@ -184,7 +184,6 @@ function formatDate(dateStr) {
           </div>
         </template>
       </Card>
-      </div>
     </div>
 
     <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
