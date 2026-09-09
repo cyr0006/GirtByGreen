@@ -4,7 +4,20 @@
       <template #title>Welcome!</template>
       <template #subtitle>Register with your email to continue.</template>
       <template #content>
-        <form class="space-y-6 mt-3" @submit.prevent="handleLogin">
+        <form class="space-y-6 mt-3" @submit.prevent="handleRegister">
+          <div class="flex flex-col gap-2">
+            <Label for="name">Name</Label>
+            <InputText
+              id="name"
+              v-model="name"
+              type="text"
+              :invalid="touched.name && errors.name"
+              @blur="touched.name = true"
+            />
+            <small v-if="touched.name && errors.name" class="text-red-500">{{
+              errors.name
+            }}</small>
+          </div>
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
             <InputText
@@ -33,11 +46,24 @@
               errors.password
             }}</small>
           </div>
+          <div class="flex flex-col gap-2">
+            <Label for="confirmPassword">Confirm Password</Label>
+            <InputText
+              id="confirmPassword"
+              v-model="confirmPassword"
+              type="password"
+              :invalid="touched.confirmPassword && errors.confirmPassword"
+              @blur="touched.confirmPassword = true"
+            />
+            <small v-if="touched.confirmPassword && errors.confirmPassword" class="text-red-500">{{
+              errors.confirmPassword
+            }}</small>
+          </div>
+          <Button type="submit" class="w-full">Register</Button>
         </form>
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button @click="register" type="submit" class="w-full">Register</Button>
           <Button type="button" severity="secondary" variant="outlined" class="w-full"
             >Register with Google</Button
           >
@@ -57,19 +83,23 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Label from 'primevue/label'
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 
+const name = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const router = useRouter()
 const auth = getAuth()
 
 const register = () => {
   createUserWithEmailAndPassword(auth, email.value, password.value)
     .then((data) => {
-      // Signed in
       const user = data.user
+      return updateProfile(user, { displayName: name.value }).then(() => user)
+    })
+    .then((user) => {
       console.log('User registered:', user)
       router.push('/FireLogin')
     })
@@ -81,23 +111,40 @@ const register = () => {
 }
 
 //Form Validation
-const touched = reactive({ email: false, password: false })
+const touched = reactive({
+  name: false,
+  email: false,
+  password: false,
+  confirmPassword: false,
+})
 
 const errors = computed(() => ({
+  name: !name.value ? 'Name is required.' : '',
   email: !email.value
     ? 'Email is required.'
     : !/\S+@\S+\.\S+/.test(email.value)
       ? 'Enter a valid email.'
       : '',
-  password: !password.value ? 'Password is required.' : '',
+  password: !password.value
+    ? 'Password is required.'
+    : password.value.length < 6
+      ? 'Password must be at least 6 characters.'
+      : '',
+  confirmPassword: !confirmPassword.value
+    ? 'Please confirm your password.'
+    : confirmPassword.value !== password.value
+      ? 'Passwords do not match.'
+      : '',
 }))
 
-function handleLogin() {
+function handleRegister() {
+  touched.name = true
   touched.email = true
   touched.password = true
+  touched.confirmPassword = true
 
-  if (errors.value.email || errors.value.password) return
+  if (errors.value.name || errors.value.email || errors.value.password || errors.value.confirmPassword) return
 
-  alert('Sign in successful!')
+  register()
 }
 </script>
