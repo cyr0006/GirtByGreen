@@ -11,6 +11,8 @@
               id="email"
               v-model="email"
               type="email"
+              autocomplete="email"
+              maxlength="254"
               :invalid="touched.email && errors.email"
               @blur="touched.email = true"
             />
@@ -27,6 +29,8 @@
               id="password"
               v-model="password"
               type="password"
+              autocomplete="current-password"
+              maxlength="128"
               :invalid="touched.password && errors.password"
               @blur="touched.password = true"
             />
@@ -68,6 +72,7 @@ import Label from 'primevue/label'
 import Message from 'primevue/message'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import { useRouter } from 'vue-router'
+import { EMAIL_REGEX, trimmed } from '../utils/validation'
 
 const email = ref('')
 const password = ref('')
@@ -97,8 +102,8 @@ async function signin() {
   submitError.value = ''
 
   try {
-    const { user } = await signInWithEmailAndPassword(auth, email.value, password.value)
-    console.log('User signed in:', user)
+    const { user } = await signInWithEmailAndPassword(auth, trimmed(email.value), password.value)
+    console.log('User signed in:', user.uid)
     router.push('/')
   } catch (error) {
     console.error('Error signing in user:', error.code, error.message)
@@ -113,7 +118,7 @@ const touched = reactive({ email: false, password: false })
 const errors = computed(() => ({
   email: !email.value
     ? 'Email is required.'
-    : !/\S+@\S+\.\S+/.test(email.value)
+    : !EMAIL_REGEX.test(email.value)
       ? 'Enter a valid email.'
       : '',
   password: !password.value ? 'Password is required.' : '',

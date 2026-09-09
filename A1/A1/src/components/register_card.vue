@@ -11,6 +11,8 @@
               id="name"
               v-model="name"
               type="text"
+              autocomplete="name"
+              maxlength="100"
               :invalid="touched.name && errors.name"
               @blur="touched.name = true"
             />
@@ -22,6 +24,8 @@
               id="email"
               v-model="email"
               type="email"
+              autocomplete="email"
+              maxlength="254"
               :invalid="touched.email && errors.email"
               @blur="touched.email = true"
             />
@@ -37,6 +41,8 @@
               id="password"
               v-model="password"
               type="password"
+              autocomplete="new-password"
+              maxlength="128"
               :invalid="touched.password && errors.password"
               @blur="touched.password = true"
             />
@@ -50,6 +56,8 @@
               id="confirmPassword"
               v-model="confirmPassword"
               type="password"
+              autocomplete="new-password"
+              maxlength="128"
               :invalid="touched.confirmPassword && errors.confirmPassword"
               @blur="touched.confirmPassword = true"
             />
@@ -101,6 +109,7 @@ import Message from 'primevue/message'
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
+import { EMAIL_REGEX, trimmed, containsHtml } from '../utils/validation'
 
 const name = ref('')
 const email = ref('')
@@ -142,15 +151,18 @@ async function register() {
   submitting.value = true
   submitError.value = ''
 
+  const cleanName = trimmed(name.value)
+  const cleanEmail = trimmed(email.value)
+
   try {
-    const { user } = await createUserWithEmailAndPassword(auth, email.value, password.value)
-    await updateProfile(user, { displayName: name.value })
+    const { user } = await createUserWithEmailAndPassword(auth, cleanEmail, password.value)
+    await updateProfile(user, { displayName: cleanName })
 
     try {
       await withTimeout(
         setDoc(doc(db, 'users', user.uid), {
-          name: name.value,
-          email: email.value,
+          name: cleanName,
+          email: cleanEmail,
           role: role.value,
         }),
         5000,
@@ -159,6 +171,7 @@ async function register() {
       console.error('Failed to save account role:', roleError)
     }
 
+    console.log('User registered:', user.uid)
     router.push('/SignIn')
   } catch (error) {
     console.error('Error registering user:', error.code, error.message)
@@ -178,10 +191,14 @@ const touched = reactive({
 })
 
 const errors = computed(() => ({
-  name: !name.value ? 'Name is required.' : '',
+  name: !name.value.trim()
+    ? 'Name is required.'
+    : containsHtml(name.value)
+      ? 'Name cannot contain < or > characters.'
+      : '',
   email: !email.value
     ? 'Email is required.'
-    : !/\S+@\S+\.\S+/.test(email.value)
+    : !EMAIL_REGEX.test(email.value)
       ? 'Enter a valid email.'
       : '',
   password: !password.value

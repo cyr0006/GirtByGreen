@@ -8,6 +8,7 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import { useAuth } from '../composables/useAuth'
+import { trimmed, containsHtml } from '../utils/validation'
 
 const { isOrg } = useAuth()
 
@@ -106,6 +107,10 @@ function validate() {
 
   if (!newEvent.value.title.trim()) {
     errors.value.title = 'Title is required.'
+  } else if (newEvent.value.title.length > 100) {
+    errors.value.title = 'Title must be 100 characters or fewer.'
+  } else if (containsHtml(newEvent.value.title)) {
+    errors.value.title = 'Title cannot contain < or > characters.'
   }
 
   if (!newEvent.value.date) {
@@ -116,16 +121,26 @@ function validate() {
 
   if (!newEvent.value.location.trim()) {
     errors.value.location = 'Location is required.'
+  } else if (newEvent.value.location.length > 150) {
+    errors.value.location = 'Location must be 150 characters or fewer.'
+  } else if (containsHtml(newEvent.value.location)) {
+    errors.value.location = 'Location cannot contain < or > characters.'
   }
 
   if (!newEvent.value.description.trim()) {
     errors.value.description = 'Description is required.'
+  } else if (newEvent.value.description.length > 1000) {
+    errors.value.description = 'Description must be 1000 characters or fewer.'
+  } else if (containsHtml(newEvent.value.description)) {
+    errors.value.description = 'Description cannot contain < or > characters.'
   }
 
   if (!newEvent.value.spots || newEvent.value.spots <= 0) {
     errors.value.spots = 'Spots must be a positive number.'
   } else if (!Number.isInteger(newEvent.value.spots)) {
     errors.value.spots = 'Spots must be a whole number.'
+  } else if (newEvent.value.spots > 100000) {
+    errors.value.spots = 'Spots must be 100,000 or fewer.'
   }
 
   if (!newEvent.value.category) {
@@ -141,6 +156,9 @@ function addEvent() {
   events.value.push({
     id: events.value.length + 1,
     ...newEvent.value,
+    title: trimmed(newEvent.value.title),
+    location: trimmed(newEvent.value.location),
+    description: trimmed(newEvent.value.description),
   })
   showDialog.value = false
 }
@@ -195,7 +213,7 @@ function formatDate(dateStr) {
       <div class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Title</label>
-          <InputText v-model="newEvent.title" placeholder="Event title" />
+          <InputText v-model="newEvent.title" placeholder="Event title" maxlength="100" />
           <small v-if="errors.title" class="text-red-500">{{ errors.title }}</small>
         </div>
         <div class="flex flex-col gap-1">
@@ -205,17 +223,22 @@ function formatDate(dateStr) {
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Location</label>
-          <InputText v-model="newEvent.location" placeholder="Event location" />
+          <InputText v-model="newEvent.location" placeholder="Event location" maxlength="150" />
           <small v-if="errors.location" class="text-red-500">{{ errors.location }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Description</label>
-          <Textarea v-model="newEvent.description" rows="3" placeholder="Event description" />
+          <Textarea
+            v-model="newEvent.description"
+            rows="3"
+            placeholder="Event description"
+            maxlength="1000"
+          />
           <small v-if="errors.description" class="text-red-500">{{ errors.description }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Available Spots</label>
-          <InputText v-model.number="newEvent.spots" type="number" />
+          <InputText v-model.number="newEvent.spots" type="number" min="1" max="100000" />
           <small v-if="errors.spots" class="text-red-500">{{ errors.spots }}</small>
         </div>
         <div class="flex flex-col gap-1">
