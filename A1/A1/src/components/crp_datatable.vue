@@ -17,17 +17,15 @@
       class="cursor-pointer"
     >
       <template #header>
-        <div class="flex justify-content-between">
-          <Button
-            type="button"
-            icon="pi pi-filter-slash"
-            label="Clear"
-            outlined
-            @click="clearFilter()"
-          />
+        <div class="flex justify-between items-center gap-4">
+          <Button type="button" label="Clear" outlined @click="clearFilter()">
+            <template #icon>
+              <FilterSlash />
+            </template>
+          </Button>
           <IconField iconPosition="left">
             <InputIcon>
-              <i class="pi pi-search" />
+              <Search />
             </InputIcon>
             <InputText v-model="filters['global'].value" placeholder="Search plants" />
           </IconField>
@@ -219,6 +217,8 @@ import Tag from 'primevue/tag'
 import Rating from 'primevue/rating'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
+import Search from '@primeicons/vue/search'
+import FilterSlash from '@primeicons/vue/filter-slash'
 
 const plants = ref()
 const loading = ref(true)
