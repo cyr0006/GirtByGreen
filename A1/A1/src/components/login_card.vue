@@ -38,13 +38,15 @@
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button type="submit" class="w-full">Login</Button>
+          <Button @click="signin" type="submit" class="w-full">Login</Button>
           <Button type="button" severity="secondary" variant="outlined" class="w-full"
             >Login with Google</Button
           >
           <div class="mt-2 text-center text-surface-500 text-sm">
             Don't have an account?
-            <Button variant="link" class="p-0">Sign up</Button>
+            <Button variant="link" class="p-0" @click="router.push('/FireRegister')"
+              >Sign up</Button
+            >
           </div>
         </div>
       </template>
@@ -58,9 +60,28 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Label from 'primevue/label'
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
+import { useRouter } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
+const router = useRouter()
+const auth = getAuth()
+
+const signin = () => {
+  signInWithEmailAndPassword(auth, email.value, password.value)
+    .then((data) => {
+      // Signed in
+      const user = data.user
+      console.log('User signed in:', user)
+      router.push('/')
+    })
+    .catch((error) => {
+      const errorCode = error.code
+      const errorMessage = error.message
+      console.error('Error signing in user:', errorCode, errorMessage)
+    })
+}
 
 const touched = reactive({ email: false, password: false })
 
@@ -79,6 +100,6 @@ function handleLogin() {
 
   if (errors.value.email || errors.value.password) return
 
-  alert('Login successful!')
+  alert('Sign in successful!')
 }
 </script>

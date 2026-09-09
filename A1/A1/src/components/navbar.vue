@@ -69,9 +69,9 @@ const items = ref([
     command: () => router.push('/'),
   },
   {
-    label: 'Log In',
+    label: 'Sign In',
     icon: AngleDown,
-    command: () => router.push('/login'),
+    command: () => router.push('/SignIn'),
   },
   {
     label: 'Events',
