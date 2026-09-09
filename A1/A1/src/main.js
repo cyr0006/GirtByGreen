@@ -1,6 +1,7 @@
 import './firebase';
 import { createApp } from 'vue';
 import PrimeVue from 'primevue/config';
+import ConfirmationService from 'primevue/confirmationservice';
 import Aura from '@primeuix/themes/aura';
 import './style.css';
 import App from './App.vue'
@@ -13,5 +14,6 @@ app.use(PrimeVue, {
 
     },
 });
+app.use(ConfirmationService);
 
 app.use(router).mount('#app')

@@ -34,11 +34,16 @@
               errors.password
             }}</small>
           </div>
+          <Message v-if="submitError" severity="error" :closable="false">{{
+            submitError
+          }}</Message>
         </form>
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button @click="signin" type="submit" class="w-full">Login</Button>
+          <Button type="submit" class="w-full" :loading="submitting" @click="handleLogin"
+            >Login</Button
+          >
           <Button type="button" severity="secondary" variant="outlined" class="w-full"
             >Login with Google</Button
           >
@@ -60,6 +65,7 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Label from 'primevue/label'
+import Message from 'primevue/message'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 
@@ -68,19 +74,38 @@ const password = ref('')
 const router = useRouter()
 const auth = getAuth()
 
-const signin = () => {
-  signInWithEmailAndPassword(auth, email.value, password.value)
-    .then((data) => {
-      // Signed in
-      const user = data.user
-      console.log('User signed in:', user)
-      router.push('/')
-    })
-    .catch((error) => {
-      const errorCode = error.code
-      const errorMessage = error.message
-      console.error('Error signing in user:', errorCode, errorMessage)
-    })
+const submitting = ref(false)
+const submitError = ref('')
+
+function authErrorMessage(code) {
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Incorrect email or password.'
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.'
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.'
+    default:
+      return 'Something went wrong while signing in. Please try again.'
+  }
+}
+
+async function signin() {
+  submitting.value = true
+  submitError.value = ''
+
+  try {
+    const { user } = await signInWithEmailAndPassword(auth, email.value, password.value)
+    console.log('User signed in:', user)
+    router.push('/')
+  } catch (error) {
+    console.error('Error signing in user:', error.code, error.message)
+    submitError.value = authErrorMessage(error.code)
+  } finally {
+    submitting.value = false
+  }
 }
 
 const touched = reactive({ email: false, password: false })
@@ -100,6 +125,6 @@ function handleLogin() {
 
   if (errors.value.email || errors.value.password) return
 
-  alert('Sign in successful!')
+  signin()
 }
 </script>

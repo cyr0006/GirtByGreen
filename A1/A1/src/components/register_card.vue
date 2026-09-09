@@ -14,9 +14,7 @@
               :invalid="touched.name && errors.name"
               @blur="touched.name = true"
             />
-            <small v-if="touched.name && errors.name" class="text-red-500">{{
-              errors.name
-            }}</small>
+            <small v-if="touched.name && errors.name" class="text-red-500">{{ errors.name }}</small>
           </div>
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
@@ -71,11 +69,10 @@
               class="w-full"
               @change="touched.role = true"
             />
-            <small v-if="touched.role && errors.role" class="text-red-500">{{
-              errors.role
-            }}</small>
+            <small v-if="touched.role && errors.role" class="text-red-500">{{ errors.role }}</small>
           </div>
-          <Button type="submit" class="w-full">Register</Button>
+          <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
+          <Button type="submit" class="w-full" :loading="submitting">Register</Button>
         </form>
       </template>
       <template #footer>
@@ -100,6 +97,7 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Label from 'primevue/label'
 import SelectButton from 'primevue/selectbutton'
+import Message from 'primevue/message'
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
@@ -117,28 +115,57 @@ const router = useRouter()
 const auth = getAuth()
 const db = getFirestore()
 
-const register = () => {
-  createUserWithEmailAndPassword(auth, email.value, password.value)
-    .then((data) => {
-      const user = data.user
-      return updateProfile(user, { displayName: name.value }).then(() => user)
-    })
-    .then((user) => {
-      return setDoc(doc(db, 'users', user.uid), {
-        name: name.value,
-        email: email.value,
-        role: role.value,
-      }).then(() => user)
-    })
-    .then((user) => {
-      console.log('User registered:', user)
-      router.push('/SignIn')
-    })
-    .catch((error) => {
-      const errorCode = error.code
-      const errorMessage = error.message
-      console.error('Error registering user:', errorCode, errorMessage)
-    })
+const submitting = ref(false)
+const submitError = ref('')
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_resolve, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+  ])
+}
+
+function authErrorMessage(code) {
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please sign in instead.'
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.'
+    case 'auth/weak-password':
+      return 'Password is too weak. Please choose a stronger password.'
+    default:
+      return 'Something went wrong while registering. Please try again.'
+  }
+}
+
+async function register() {
+  submitting.value = true
+  submitError.value = ''
+
+  try {
+    const { user } = await createUserWithEmailAndPassword(auth, email.value, password.value)
+    await updateProfile(user, { displayName: name.value })
+
+    try {
+      await withTimeout(
+        setDoc(doc(db, 'users', user.uid), {
+          name: name.value,
+          email: email.value,
+          role: role.value,
+        }),
+        5000,
+      )
+    } catch (roleError) {
+      console.error('Failed to save account role:', roleError)
+    }
+
+    router.push('/SignIn')
+  } catch (error) {
+    console.error('Error registering user:', error.code, error.message)
+    submitError.value = authErrorMessage(error.code)
+  } finally {
+    submitting.value = false
+  }
 }
 
 //Form Validation

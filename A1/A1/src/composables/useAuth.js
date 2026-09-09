@@ -9,12 +9,24 @@ const ready = ref(false)
 const auth = getAuth()
 const db = getFirestore()
 
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_resolve, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+  ])
+}
+
 onAuthStateChanged(auth, async (firebaseUser) => {
   currentUser.value = firebaseUser
 
   if (firebaseUser) {
-    const snapshot = await getDoc(doc(db, 'users', firebaseUser.uid))
-    role.value = snapshot.exists() ? snapshot.data().role : null
+    try {
+      const snapshot = await withTimeout(getDoc(doc(db, 'users', firebaseUser.uid)), 5000)
+      role.value = snapshot.exists() ? snapshot.data().role : null
+    } catch (error) {
+      console.error('Failed to load account role:', error)
+      role.value = null
+    }
   } else {
     role.value = null
   }

@@ -28,8 +28,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useConfirm } from 'primevue/useconfirm'
+import { getAuth, signOut } from 'firebase/auth'
+import { useAuth } from '../composables/useAuth'
 
 //images and icons
 import logo from '../assets/GBG_Logo.png'
@@ -38,7 +41,6 @@ import Badge from 'primevue/badge'
 import InputText from 'primevue/inputtext'
 import Avatar from 'primevue/avatar'
 import Ripple from 'primevue/ripple'
-import AngleDown from '@primeicons/vue/angle-down'
 import User from '@primeicons/vue/user'
 import Bolt from '@primeicons/vue/bolt'
 import HomeIcon from '@primeicons/vue/home'
@@ -46,20 +48,45 @@ import Pencil from '@primeicons/vue/pencil'
 import Search from '@primeicons/vue/search'
 import Server from '@primeicons/vue/server'
 import Calendar from '@primeicons/vue/calendar'
+import SignInIcon from '@primeicons/vue/sign-in'
+import SignOutIcon from '@primeicons/vue/sign-out'
+import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 
 const router = useRouter()
+const confirm = useConfirm()
+const auth = getAuth()
+const { user } = useAuth()
 
-const items = ref([
+function confirmSignOut() {
+  confirm.require({
+    header: 'Sign Out',
+    message: 'Are you sure you want to sign out?',
+    icon: ExclamationTriangle,
+    acceptLabel: 'Sign Out',
+    rejectLabel: 'Cancel',
+    accept: () => {
+      signOut(auth).then(() => router.push('/'))
+    },
+  })
+}
+
+const items = computed(() => [
   {
     label: 'Home',
     icon: HomeIcon,
     command: () => router.push('/'),
   },
-  {
-    label: 'Sign In',
-    icon: AngleDown,
-    command: () => router.push('/SignIn'),
-  },
+  user.value
+    ? {
+        label: 'Sign Out',
+        icon: SignOutIcon,
+        command: confirmSignOut,
+      }
+    : {
+        label: 'Sign In',
+        icon: SignInIcon,
+        command: () => router.push('/SignIn'),
+      },
   {
     label: 'Events',
     icon: Calendar,
