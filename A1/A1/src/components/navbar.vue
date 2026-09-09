@@ -73,7 +73,7 @@ const items = ref([
       {
         label: 'Click, Read, Plant',
         icon: Bolt,
-        command: () => router.push('/projects/core'),
+        command: () => router.push('/ClickReadPlant'),
       },
       {
         label: 'News',
