@@ -2,14 +2,16 @@
   <div class="card">
     <DataTable
       v-model:filters="filters"
-      :value="customers"
+      :value="plants"
       paginator
       showGridlines
       :rows="10"
       dataKey="id"
       filterDisplay="menu"
       :loading="loading"
-      :globalFilterFields="['name', 'country.name', 'representative.name', 'balance', 'status']"
+      :globalFilterFields="['name', 'origin', 'sun', 'water']"
+      sortField="name"
+      :sortOrder="1"
     >
       <template #header>
         <div class="flex justify-content-between">
@@ -24,13 +26,25 @@
             <InputIcon>
               <i class="pi pi-search" />
             </InputIcon>
-            <InputText v-model="filters['global'].value" placeholder="Keyword Search" />
+            <InputText v-model="filters['global'].value" placeholder="Search plants" />
           </IconField>
         </div>
       </template>
-      <template #empty> No customers found. </template>
-      <template #loading> Loading customers data. Please wait. </template>
-      <Column field="name" header="Name" style="min-width: 12rem">
+      <template #empty> No plants found. </template>
+      <template #loading> Loading plants suited to Victoria. Please wait. </template>
+
+      <Column header="Photo" style="min-width: 6rem">
+        <template #body="{ data }">
+          <img
+            :src="data.photo"
+            :alt="data.name"
+            class="rounded-full"
+            style="width: 48px; height: 48px"
+          />
+        </template>
+      </Column>
+
+      <Column field="name" header="Name" sortable style="min-width: 14rem">
         <template #body="{ data }">
           {{ data.name }}
         </template>
@@ -43,172 +57,78 @@
           />
         </template>
       </Column>
-      <Column header="Country" filterField="country.name" style="min-width: 12rem">
+
+      <Column field="origin" header="Origin" sortable style="min-width: 14rem">
         <template #body="{ data }">
-          <div class="flex align-items-center gap-2">
-            <img
-              alt="flag"
-              src="https://primefaces.org/cdn/primevue/images/flag/flag_placeholder.png"
-              :class="`flag flag-${data.country.code}`"
-              style="width: 24px"
-            />
-            <span>{{ data.country.name }}</span>
-          </div>
+          {{ data.origin }}
         </template>
         <template #filter="{ filterModel }">
           <InputText
             v-model="filterModel.value"
             type="text"
             class="p-column-filter"
-            placeholder="Search by country"
-          />
-        </template>
-        <template #filterclear="{ filterCallback }">
-          <Button
-            type="button"
-            icon="pi pi-times"
-            @click="filterCallback()"
-            severity="secondary"
-          ></Button>
-        </template>
-        <template #filterapply="{ filterCallback }">
-          <Button
-            type="button"
-            icon="pi pi-check"
-            @click="filterCallback()"
-            severity="success"
-          ></Button>
-        </template>
-        <template #filterfooter>
-          <div class="px-3 pt-0 pb-3 text-center">Customized Buttons</div>
-        </template>
-      </Column>
-      <Column
-        header="Agent"
-        filterField="representative"
-        :showFilterMatchModes="false"
-        :filterMenuStyle="{ width: '14rem' }"
-        style="min-width: 14rem"
-      >
-        <template #body="{ data }">
-          <div class="flex align-items-center gap-2">
-            <img
-              :alt="data.representative.name"
-              :src="`https://primefaces.org/cdn/primevue/images/avatar/${data.representative.image}`"
-              style="width: 32px"
-            />
-            <span>{{ data.representative.name }}</span>
-          </div>
-        </template>
-        <template #filter="{ filterModel }">
-          <MultiSelect
-            v-model="filterModel.value"
-            :options="representatives"
-            optionLabel="name"
-            placeholder="Any"
-            class="p-column-filter"
-          >
-            <template #option="slotProps">
-              <div class="flex align-items-center gap-2">
-                <img
-                  :alt="slotProps.option.name"
-                  :src="`https://primefaces.org/cdn/primevue/images/avatar/${slotProps.option.image}`"
-                  style="width: 32px"
-                />
-                <span>{{ slotProps.option.name }}</span>
-              </div>
-            </template>
-          </MultiSelect>
-        </template>
-      </Column>
-      <Column header="Date" filterField="date" dataType="date" style="min-width: 10rem">
-        <template #body="{ data }">
-          {{ formatDate(data.date) }}
-        </template>
-        <template #filter="{ filterModel }">
-          <DatePicker
-            v-model="filterModel.value"
-            dateFormat="mm/dd/yy"
-            placeholder="mm/dd/yyyy"
-            mask="99/99/9999"
+            placeholder="Search by origin"
           />
         </template>
       </Column>
-      <Column header="Balance" filterField="balance" dataType="numeric" style="min-width: 10rem">
+
+      <Column field="dimensions" header="Dimensions" style="min-width: 12rem">
         <template #body="{ data }">
-          {{ formatCurrency(data.balance) }}
-        </template>
-        <template #filter="{ filterModel }">
-          <InputNumber v-model="filterModel.value" mode="currency" currency="USD" locale="en-US" />
+          {{ data.dimensions }}
         </template>
       </Column>
+
       <Column
-        header="Status"
-        field="status"
-        :filterMenuStyle="{ width: '14rem' }"
-        style="min-width: 12rem"
+        field="sun"
+        header="Sun Req."
+        :filterMenuStyle="{ width: '12rem' }"
+        style="min-width: 10rem"
       >
         <template #body="{ data }">
-          <Tag :value="data.status" :severity="getSeverity(data.status)" />
+          <Tag :value="data.sun" :severity="getSunSeverity(data.sun)" />
         </template>
         <template #filter="{ filterModel }">
           <Select
             v-model="filterModel.value"
-            :options="statuses"
+            :options="sunOptions"
             placeholder="Select One"
             class="p-column-filter"
             showClear
           >
             <template #option="slotProps">
-              <Tag :value="slotProps.option" :severity="getSeverity(slotProps.option)" />
+              <Tag :value="slotProps.option" :severity="getSunSeverity(slotProps.option)" />
             </template>
           </Select>
         </template>
       </Column>
+
       <Column
-        field="activity"
-        header="Activity"
-        :showFilterMatchModes="false"
-        style="min-width: 12rem"
+        field="water"
+        header="Water Req."
+        :filterMenuStyle="{ width: '12rem' }"
+        style="min-width: 10rem"
       >
         <template #body="{ data }">
-          <ProgressBar :value="data.activity" :showValue="false" style="height: 6px"></ProgressBar>
+          <Tag :value="data.water" :severity="getWaterSeverity(data.water)" />
         </template>
         <template #filter="{ filterModel }">
-          <Slider v-model="filterModel.value" range class="m-3"></Slider>
-          <div class="flex align-items-center justify-content-between px-2">
-            <span>{{ filterModel.value ? filterModel.value[0] : 0 }}</span>
-            <span>{{ filterModel.value ? filterModel.value[1] : 100 }}</span>
-          </div>
-        </template>
-      </Column>
-      <Column
-        field="verified"
-        header="Verified"
-        dataType="boolean"
-        bodyClass="text-center"
-        style="min-width: 8rem"
-      >
-        <template #body="{ data }">
-          <i
-            class="pi"
-            :class="{
-              'pi-check-circle text-green-500 ': data.verified,
-              'pi-times-circle text-red-500': !data.verified,
-            }"
-          ></i>
-        </template>
-        <template #filter="{ filterModel }">
-          <label for="verified-filter" class="font-bold"> Verified </label>
           <Select
             v-model="filterModel.value"
-            :options="verifiedOptions"
-            optionLabel="label"
-            optionValue="value"
-            inputId="verified-filter"
-            placeholder="Any"
+            :options="waterOptions"
+            placeholder="Select One"
+            class="p-column-filter"
             showClear
-          />
+          >
+            <template #option="slotProps">
+              <Tag :value="slotProps.option" :severity="getWaterSeverity(slotProps.option)" />
+            </template>
+          </Select>
+        </template>
+      </Column>
+
+      <Column field="rating" header="Reviews" sortable style="min-width: 10rem">
+        <template #body="{ data }">
+          <Rating :modelValue="data.rating" readonly :stars="5" />
         </template>
       </Column>
     </DataTable>
@@ -217,46 +137,27 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { CustomerService } from '@/service/CustomerService'
-import { FilterMatchMode, FilterOperator } from '@primevue/core/api'
+import { PlantService } from '@/service/PlantService'
+import { FilterMatchMode } from '@primevue/core/api'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
-import MultiSelect from 'primevue/multiselect'
-import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
-import ProgressBar from 'primevue/progressbar'
-import Slider from 'primevue/slider'
+import Rating from 'primevue/rating'
 
-const customers = ref()
-const filters = ref()
-const verifiedOptions = ref([
-  { label: 'Yes', value: true },
-  { label: 'No', value: false },
-])
-const representatives = ref([
-  { name: 'Amy Elsner', image: 'amyelsner.png' },
-  { name: 'Anna Fali', image: 'annafali.png' },
-  { name: 'Asiya Javayant', image: 'asiyajavayant.png' },
-  { name: 'Bernardo Dominic', image: 'bernardodominic.png' },
-  { name: 'Elwin Sharvill', image: 'elwinsharvill.png' },
-  { name: 'Ioni Bowcher', image: 'ionibowcher.png' },
-  { name: 'Ivan Magalhaes', image: 'ivanmagalhaes.png' },
-  { name: 'Onyama Limba', image: 'onyamalimba.png' },
-  { name: 'Stephen Shaw', image: 'stephenshaw.png' },
-  { name: 'XuXue Feng', image: 'xuxuefeng.png' },
-])
-const statuses = ref(['unqualified', 'qualified', 'new', 'negotiation', 'renewal', 'proposal'])
+const plants = ref()
 const loading = ref(true)
 
+const sunOptions = ref(['Full Sun', 'Part Shade', 'Full Shade'])
+const waterOptions = ref(['Low', 'Medium', 'High'])
+
 onMounted(() => {
-  CustomerService.getCustomersMedium().then((data) => {
-    customers.value = getCustomers(data)
+  PlantService.getPlants().then((data) => {
+    plants.value = data
     loading.value = false
   })
 })
@@ -264,69 +165,42 @@ onMounted(() => {
 const initFilters = () => {
   filters.value = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    name: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }],
-    },
-    'country.name': {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }],
-    },
-    representative: { value: null, matchMode: FilterMatchMode.IN },
-    date: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
-    },
-    balance: {
-      operator: FilterOperator.AND,
-      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
-    },
-    status: {
-      operator: FilterOperator.OR,
-      constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
-    },
-    activity: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
-    verified: { value: null, matchMode: FilterMatchMode.EQUALS },
+    name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    origin: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    sun: { value: null, matchMode: FilterMatchMode.EQUALS },
+    water: { value: null, matchMode: FilterMatchMode.EQUALS },
   }
 }
 
+const filters = ref()
 initFilters()
 
-const formatDate = (value) => {
-  return value.toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-const formatCurrency = (value) => {
-  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-}
 const clearFilter = () => {
   initFilters()
 }
-const getCustomers = (data) => {
-  return [...(data || [])].map((d) => {
-    d.date = new Date(d.date)
 
-    return d
-  })
-}
-const getSeverity = (status) => {
-  switch (status) {
-    case 'unqualified':
-      return 'danger'
-
-    case 'qualified':
-      return 'success'
-
-    case 'new':
+const getSunSeverity = (sun) => {
+  switch (sun) {
+    case 'Full Sun':
+      return 'warn'
+    case 'Part Shade':
       return 'info'
+    case 'Full Shade':
+      return 'secondary'
+    default:
+      return null
+  }
+}
 
-    case 'negotiation':
-      return 'warning'
-
-    case 'renewal':
+const getWaterSeverity = (water) => {
+  switch (water) {
+    case 'Low':
+      return 'success'
+    case 'Medium':
+      return 'info'
+    case 'High':
+      return 'danger'
+    default:
       return null
   }
 }
