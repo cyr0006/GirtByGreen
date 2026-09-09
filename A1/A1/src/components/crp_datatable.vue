@@ -12,6 +12,9 @@
       :globalFilterFields="['name', 'origin', 'sun', 'water']"
       sortField="name"
       :sortOrder="1"
+      @row-click="onRowClick"
+      rowHover
+      class="cursor-pointer"
     >
       <template #header>
         <div class="flex justify-content-between">
@@ -126,12 +129,78 @@
         </template>
       </Column>
 
-      <Column field="rating" header="Reviews" sortable style="min-width: 10rem">
+      <Column field="rating" header="Reviews" sortable style="min-width: 12rem">
         <template #body="{ data }">
-          <Rating :modelValue="data.rating" readonly :stars="5" />
+          <div class="flex items-center gap-2">
+            <Rating :modelValue="data.rating" readonly allowHalf :stars="5" />
+            <span class="text-sm text-surface-500">({{ data.reviews.length }})</span>
+          </div>
         </template>
       </Column>
     </DataTable>
+
+    <Dialog
+      v-model:visible="detailVisible"
+      modal
+      :header="selectedPlant?.name"
+      :style="{ width: '40rem' }"
+      class="mx-4"
+    >
+      <div v-if="selectedPlant" class="flex flex-col gap-4">
+        <div class="flex gap-4 items-start">
+          <img
+            :src="selectedPlant.photo"
+            :alt="selectedPlant.name"
+            class="rounded-full"
+            style="width: 80px; height: 80px"
+          />
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2">
+              <Rating :modelValue="selectedPlant.rating" readonly allowHalf :stars="5" />
+              <span class="text-sm text-surface-500"
+                >{{ selectedPlant.rating }} ({{ selectedPlant.reviews.length }} reviews)</span
+              >
+            </div>
+            <Tag :value="selectedPlant.origin" severity="secondary" />
+          </div>
+        </div>
+
+        <p class="text-sm">{{ selectedPlant.description }}</p>
+
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <div class="text-surface-500">Dimensions</div>
+            <div>{{ selectedPlant.dimensions }}</div>
+          </div>
+          <div>
+            <div class="text-surface-500">Sun</div>
+            <Tag :value="selectedPlant.sun" :severity="getSunSeverity(selectedPlant.sun)" />
+          </div>
+          <div>
+            <div class="text-surface-500">Water</div>
+            <Tag :value="selectedPlant.water" :severity="getWaterSeverity(selectedPlant.water)" />
+          </div>
+        </div>
+
+        <Divider />
+
+        <div class="flex flex-col gap-3">
+          <h3 class="font-semibold">Reviews</h3>
+          <div
+            v-for="review in selectedPlant.reviews"
+            :key="review.id"
+            class="flex flex-col gap-1 border-b border-surface-200 pb-3 last:border-b-0"
+          >
+            <div class="flex items-center justify-between">
+              <span class="font-medium">{{ review.user }}</span>
+              <span class="text-xs text-surface-500">{{ review.date }}</span>
+            </div>
+            <Rating :modelValue="review.rating" readonly :stars="5" />
+            <p class="text-sm">{{ review.comment }}</p>
+          </div>
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -148,19 +217,34 @@ import InputIcon from 'primevue/inputicon'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Rating from 'primevue/rating'
+import Dialog from 'primevue/dialog'
+import Divider from 'primevue/divider'
 
 const plants = ref()
 const loading = ref(true)
+const detailVisible = ref(false)
+const selectedPlant = ref(null)
 
 const sunOptions = ref(['Full Sun', 'Part Shade', 'Full Shade'])
 const waterOptions = ref(['Low', 'Medium', 'High'])
 
+const averageRating = (reviews) => {
+  if (!reviews.length) return 0
+  const sum = reviews.reduce((total, review) => total + review.rating, 0)
+  return Math.round((sum / reviews.length) * 2) / 2
+}
+
 onMounted(() => {
   PlantService.getPlants().then((data) => {
-    plants.value = data
+    plants.value = data.map((plant) => ({ ...plant, rating: averageRating(plant.reviews) }))
     loading.value = false
   })
 })
+
+const onRowClick = (event) => {
+  selectedPlant.value = event.data
+  detailVisible.value = true
+}
 
 const initFilters = () => {
   filters.value = {
