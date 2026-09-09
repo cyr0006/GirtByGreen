@@ -7,6 +7,9 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
+import { useAuth } from '../composables/useAuth'
+
+const { isOrg } = useAuth()
 
 const events = ref([
   {
@@ -92,6 +95,7 @@ const newEvent = ref({
 })
 
 function openDialog() {
+  if (!isOrg.value) return
   newEvent.value = { title: '', date: '', location: '', description: '', spots: 0, category: '' }
   errors.value = {}
   showDialog.value = true
@@ -132,6 +136,7 @@ function validate() {
 }
 
 function addEvent() {
+  if (!isOrg.value) return
   if (!validate()) return
   events.value.push({
     id: events.value.length + 1,
@@ -157,7 +162,7 @@ function formatDate(dateStr) {
       <p class="text-surface-500 mb-6">
         Browse our upcoming community events. Sign up to get involved and make a difference.
       </p>
-      <Button icon="pi pi-plus" label="Add Event" @click="openDialog" />
+      <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" />
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

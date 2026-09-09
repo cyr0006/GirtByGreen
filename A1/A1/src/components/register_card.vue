@@ -59,6 +59,22 @@
               errors.confirmPassword
             }}</small>
           </div>
+          <div class="flex flex-col gap-2">
+            <Label for="role">I am registering as</Label>
+            <SelectButton
+              id="role"
+              v-model="role"
+              :options="roleOptions"
+              optionLabel="label"
+              optionValue="value"
+              :invalid="touched.role && errors.role"
+              class="w-full"
+              @change="touched.role = true"
+            />
+            <small v-if="touched.role && errors.role" class="text-red-500">{{
+              errors.role
+            }}</small>
+          </div>
           <Button type="submit" class="w-full">Register</Button>
         </form>
       </template>
@@ -83,15 +99,23 @@ import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Label from 'primevue/label'
+import SelectButton from 'primevue/selectbutton'
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const role = ref(null)
+const roleOptions = ref([
+  { label: 'User', value: 'user' },
+  { label: 'Organisation', value: 'org' },
+])
 const router = useRouter()
 const auth = getAuth()
+const db = getFirestore()
 
 const register = () => {
   createUserWithEmailAndPassword(auth, email.value, password.value)
@@ -100,8 +124,15 @@ const register = () => {
       return updateProfile(user, { displayName: name.value }).then(() => user)
     })
     .then((user) => {
+      return setDoc(doc(db, 'users', user.uid), {
+        name: name.value,
+        email: email.value,
+        role: role.value,
+      }).then(() => user)
+    })
+    .then((user) => {
       console.log('User registered:', user)
-      router.push('/FireLogin')
+      router.push('/SignIn')
     })
     .catch((error) => {
       const errorCode = error.code
@@ -116,6 +147,7 @@ const touched = reactive({
   email: false,
   password: false,
   confirmPassword: false,
+  role: false,
 })
 
 const errors = computed(() => ({
@@ -135,6 +167,7 @@ const errors = computed(() => ({
     : confirmPassword.value !== password.value
       ? 'Passwords do not match.'
       : '',
+  role: !role.value ? 'Please select an account type.' : '',
 }))
 
 function handleRegister() {
@@ -142,8 +175,16 @@ function handleRegister() {
   touched.email = true
   touched.password = true
   touched.confirmPassword = true
+  touched.role = true
 
-  if (errors.value.name || errors.value.email || errors.value.password || errors.value.confirmPassword) return
+  if (
+    errors.value.name ||
+    errors.value.email ||
+    errors.value.password ||
+    errors.value.confirmPassword ||
+    errors.value.role
+  )
+    return
 
   register()
 }
