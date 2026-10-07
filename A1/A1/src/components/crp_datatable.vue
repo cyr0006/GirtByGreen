@@ -1,8 +1,10 @@
 <template>
   <div class="card">
     <DataTable
+      ref="dt"
       v-model:filters="filters"
       :value="plants"
+      exportFilename="plants"
       paginator
       showGridlines
       :rows="10"
@@ -18,11 +20,18 @@
     >
       <template #header>
         <div class="flex justify-between items-center gap-4">
-          <Button type="button" label="Clear" outlined @click="clearFilter()">
-            <template #icon>
-              <FilterSlash />
-            </template>
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button type="button" label="Clear" outlined @click="clearFilter()">
+              <template #icon>
+                <FilterSlash />
+              </template>
+            </Button>
+            <Button type="button" label="Export" outlined @click="openExportDialog()">
+              <template #icon>
+                <FileExcel />
+              </template>
+            </Button>
+          </div>
           <IconField iconPosition="left">
             <InputIcon>
               <Search />
@@ -232,6 +241,59 @@
         </div>
       </div>
     </Dialog>
+
+    <Dialog
+      v-model:visible="exportDialogVisible"
+      modal
+      header="Export plant list"
+      :style="{ width: '28rem' }"
+      class="mx-4"
+    >
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <RadioButton v-model="exportMode" inputId="exportDownload" value="download" />
+            <label for="exportDownload">Download as CSV</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <RadioButton
+              v-model="exportMode"
+              inputId="exportEmail"
+              value="email"
+              :disabled="!user"
+            />
+            <label for="exportEmail">Email as CSV</label>
+          </div>
+          <small v-if="!user" class="text-surface-500">
+            <router-link to="/SignIn" class="text-primary underline">Sign in</router-link>
+            to email the list.
+          </small>
+        </div>
+
+        <div v-if="exportMode === 'email'" class="flex flex-col gap-1">
+          <InputText
+            v-model="exportEmail"
+            type="email"
+            placeholder="recipient@example.com"
+            :invalid="!!exportError"
+          />
+          <small v-if="exportError" class="text-red-500">{{ exportError }}</small>
+        </div>
+
+        <Message v-if="exportSent" severity="success" class="text-sm">
+          Email sent to {{ exportEmail }}.
+        </Message>
+      </div>
+
+      <template #footer>
+        <Button label="Cancel" outlined @click="exportDialogVisible = false" />
+        <Button
+          :label="exportMode === 'email' ? 'Send' : 'Download'"
+          :loading="exportSending"
+          @click="confirmExport()"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -252,13 +314,18 @@ import Tag from 'primevue/tag'
 import Rating from 'primevue/rating'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
+import RadioButton from 'primevue/radiobutton'
 import Search from '@primeicons/vue/search'
 import FilterSlash from '@primeicons/vue/filter-slash'
+import FileExcel from '@primeicons/vue/file-excel'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '@/firebase'
 import { useAuth } from '@/composables/useAuth'
-import { trimmed, containsHtml } from '@/utils/validation'
+import { trimmed, containsHtml, EMAIL_REGEX } from '@/utils/validation'
 
 const { user } = useAuth()
 
+const dt = ref()
 const plants = ref()
 const loading = ref(true)
 const detailVisible = ref(false)
@@ -270,6 +337,13 @@ const reviewSubmitted = ref(false)
 
 const sunOptions = ref(['Full Sun', 'Part Shade', 'Full Shade'])
 const waterOptions = ref(['Low', 'Medium', 'High'])
+
+const exportDialogVisible = ref(false)
+const exportMode = ref('download')
+const exportEmail = ref('')
+const exportError = ref('')
+const exportSending = ref(false)
+const exportSent = ref(false)
 
 const averageRating = (reviews) => {
   if (!reviews.length) return 0
@@ -347,6 +421,55 @@ initFilters()
 
 const clearFilter = () => {
   initFilters()
+}
+
+const openExportDialog = () => {
+  exportMode.value = 'download'
+  exportEmail.value = ''
+  exportError.value = ''
+  exportSent.value = false
+  exportDialogVisible.value = true
+}
+
+const csvCell = (value) => {
+  const text = String(value ?? '')
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+const buildPlantsCsv = () => {
+  const header = ['Name', 'Origin', 'Dimensions', 'Sun Req.', 'Water Req.', 'Rating']
+  const rows = (plants.value || []).map((plant) =>
+    [plant.name, plant.origin, plant.dimensions, plant.sun, plant.water, plant.rating].map(
+      csvCell,
+    ),
+  )
+  return [header, ...rows].map((row) => row.join(',')).join('\n')
+}
+
+const sendPlantsCsvEmail = httpsCallable(functions, 'sendPlantsCsvEmail')
+
+async function confirmExport() {
+  if (exportMode.value === 'download') {
+    dt.value.exportCSV()
+    exportDialogVisible.value = false
+    return
+  }
+
+  exportError.value = ''
+  if (!EMAIL_REGEX.test(trimmed(exportEmail.value) || '')) {
+    exportError.value = 'Please enter a valid email address.'
+    return
+  }
+
+  exportSending.value = true
+  try {
+    await sendPlantsCsvEmail({ to: trimmed(exportEmail.value), csv: buildPlantsCsv() })
+    exportSent.value = true
+  } catch (err) {
+    exportError.value = err?.message || 'Failed to send email. Please try again.'
+  } finally {
+    exportSending.value = false
+  }
 }
 
 const getSunSeverity = (sun) => {
