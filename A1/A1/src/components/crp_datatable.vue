@@ -318,7 +318,8 @@ import RadioButton from 'primevue/radiobutton'
 import Search from '@primeicons/vue/search'
 import FilterSlash from '@primeicons/vue/filter-slash'
 import FileExcel from '@primeicons/vue/file-excel'
-import emailjs from '@emailjs/browser'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '@/firebase'
 import { useAuth } from '@/composables/useAuth'
 import { trimmed, containsHtml, EMAIL_REGEX } from '@/utils/validation'
 
@@ -445,9 +446,7 @@ const buildPlantsCsv = () => {
   return [header, ...rows].map((row) => row.join(',')).join('\n')
 }
 
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+const sendPlantsCsvEmail = httpsCallable(functions, 'sendPlantsCsvEmail')
 
 async function confirmExport() {
   if (exportMode.value === 'download') {
@@ -464,15 +463,10 @@ async function confirmExport() {
 
   exportSending.value = true
   try {
-    await emailjs.send(
-      EMAILJS_SERVICE_ID,
-      EMAILJS_TEMPLATE_ID,
-      { to_email: trimmed(exportEmail.value), csv_content: buildPlantsCsv() },
-      { publicKey: EMAILJS_PUBLIC_KEY },
-    )
+    await sendPlantsCsvEmail({ to: trimmed(exportEmail.value), csv: buildPlantsCsv() })
     exportSent.value = true
   } catch (err) {
-    exportError.value = err?.text || 'Failed to send email. Please try again.'
+    exportError.value = err?.message || 'Failed to send email. Please try again.'
   } finally {
     exportSending.value = false
   }

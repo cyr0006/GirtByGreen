@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { getFunctions } from 'firebase/functions'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAgDk1nBaQifhusiJy6reMY8Ko3LEc4aEM',
@@ -10,3 +11,4 @@ const firebaseConfig = {
 }
 
 export const firebaseApp = initializeApp(firebaseConfig)
+export const functions = getFunctions(firebaseApp)
