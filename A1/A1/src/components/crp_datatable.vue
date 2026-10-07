@@ -196,6 +196,39 @@
             <Rating :modelValue="review.rating" readonly :stars="5" />
             <p class="text-sm">{{ review.comment }}</p>
           </div>
+          <p v-if="!selectedPlant.reviews.length" class="text-sm text-surface-500">
+            No reviews yet. Be the first to share your experience.
+          </p>
+        </div>
+
+        <Divider />
+
+        <div class="flex flex-col gap-3">
+          <h3 class="font-semibold">Write a Review</h3>
+          <template v-if="user">
+            <div class="flex flex-col gap-1">
+              <Rating v-model="reviewForm.rating" :stars="5" />
+              <small v-if="reviewErrors.rating" class="text-red-500">{{ reviewErrors.rating }}</small>
+            </div>
+            <div class="flex flex-col gap-1">
+              <Textarea
+                v-model="reviewForm.comment"
+                rows="3"
+                maxlength="500"
+                placeholder="Share your experience growing this plant..."
+                :invalid="!!reviewErrors.comment"
+              />
+              <small v-if="reviewErrors.comment" class="text-red-500">{{ reviewErrors.comment }}</small>
+            </div>
+            <Message v-if="reviewSubmitted" severity="success" class="text-sm">
+              Thanks for your review!
+            </Message>
+            <Button label="Submit Review" class="self-start" @click="submitReview" />
+          </template>
+          <p v-else class="text-sm text-surface-500">
+            <router-link to="/SignIn" class="text-primary underline">Sign in</router-link>
+            to write a review.
+          </p>
         </div>
       </div>
     </Dialog>
@@ -210,6 +243,8 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import Message from 'primevue/message'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import Select from 'primevue/select'
@@ -219,11 +254,19 @@ import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 import Search from '@primeicons/vue/search'
 import FilterSlash from '@primeicons/vue/filter-slash'
+import { useAuth } from '@/composables/useAuth'
+import { trimmed, containsHtml } from '@/utils/validation'
+
+const { user } = useAuth()
 
 const plants = ref()
 const loading = ref(true)
 const detailVisible = ref(false)
 const selectedPlant = ref(null)
+
+const reviewForm = ref({ rating: 0, comment: '' })
+const reviewErrors = ref({})
+const reviewSubmitted = ref(false)
 
 const sunOptions = ref(['Full Sun', 'Part Shade', 'Full Shade'])
 const waterOptions = ref(['Low', 'Medium', 'High'])
@@ -244,6 +287,49 @@ onMounted(() => {
 const onRowClick = (event) => {
   selectedPlant.value = event.data
   detailVisible.value = true
+  reviewForm.value = { rating: 0, comment: '' }
+  reviewErrors.value = {}
+  reviewSubmitted.value = false
+}
+
+function validateReview() {
+  reviewErrors.value = {}
+
+  if (!reviewForm.value.rating || reviewForm.value.rating < 1) {
+    reviewErrors.value.rating = 'Please select a star rating.'
+  }
+
+  const comment = reviewForm.value.comment || ''
+  if (!comment.trim()) {
+    reviewErrors.value.comment = 'A comment is required.'
+  } else if (comment.length > 500) {
+    reviewErrors.value.comment = 'Comment must be 500 characters or fewer.'
+  } else if (containsHtml(comment)) {
+    reviewErrors.value.comment = 'Comment cannot contain < or > characters.'
+  }
+
+  return Object.keys(reviewErrors.value).length === 0
+}
+
+function submitReview() {
+  if (!user.value || !selectedPlant.value) return
+  if (!validateReview()) return
+
+  const reviews = selectedPlant.value.reviews
+  const nextId = reviews.length ? Math.max(...reviews.map((r) => r.id)) + 1 : 1
+
+  reviews.unshift({
+    id: nextId,
+    user: user.value.displayName || user.value.email || 'Anonymous',
+    rating: reviewForm.value.rating,
+    date: new Date().toISOString().slice(0, 10),
+    comment: trimmed(reviewForm.value.comment),
+  })
+
+  selectedPlant.value.rating = averageRating(reviews)
+  reviewForm.value = { rating: 0, comment: '' }
+  reviewErrors.value = {}
+  reviewSubmitted.value = true
 }
 
 const initFilters = () => {

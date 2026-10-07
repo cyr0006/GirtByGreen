@@ -172,7 +172,7 @@ async function register() {
     }
 
     console.log('User registered:', user.uid)
-    router.push('/SignIn')
+    router.push('/')
   } catch (error) {
     console.error('Error registering user:', error.code, error.message)
     submitError.value = authErrorMessage(error.code)

@@ -20,7 +20,12 @@
       <template #end>
         <div class="flex items-center gap-2">
           <InputText placeholder="Search" type="text" class="w-36" />
-          <Avatar icon="User" shape="circle" />
+          <Avatar
+            icon="User"
+            shape="circle"
+            class="cursor-pointer"
+            @click="router.push(user ? '/Profile' : '/SignIn')"
+          />
         </div>
       </template>
     </Menubar>
