@@ -1,6 +1,19 @@
 <script setup>
 import Button from 'primevue/button'
+import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 import heroforest from '../assets/heroforest.jpg'
+
+const router = useRouter()
+const { user } = useAuth()
+
+function getStarted() {
+  router.push(user.value ? '/my-garden-projects' : '/FireRegister')
+}
+
+function learnMore() {
+  document.getElementById('explore')?.scrollIntoView({ behavior: 'smooth' })
+}
 </script>
 
 <template>
@@ -20,8 +33,8 @@ import heroforest from '../assets/heroforest.jpg'
         Empowering communities, 1 tree at a time!
       </p>
       <div class="flex gap-4 justify-center">
-        <Button label="Get Started" size="large" />
-        <Button label="Learn More" severity="secondary" size="large" outlined />
+        <Button label="Get Started" size="large" @click="getStarted" />
+        <Button label="Learn More" severity="secondary" size="large" outlined @click="learnMore" />
       </div>
     </div>
   </div>
