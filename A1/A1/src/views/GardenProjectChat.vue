@@ -9,7 +9,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { ProjectService } from '@/service/ProjectService'
 import { PlantService } from '@/service/PlantService'
 import { trimmed, containsHtml } from '@/utils/validation'
-import { renderMarkdownLite } from '@/utils/markdownLite'
+import { renderMarkdownLite } from '@/utils/markdown'
 
 const route = useRoute()
 const router = useRouter()
@@ -127,7 +127,9 @@ function formatTime(timestamp) {
         <template #title>{{ project.address }}</template>
         <template #content>
           <p class="text-sm text-surface-600"><strong>Goal:</strong> {{ project.goal }}</p>
-          <p class="text-sm text-surface-600"><strong>Conditions:</strong> {{ project.conditions }}</p>
+          <p class="text-sm text-surface-600">
+            <strong>Conditions:</strong> {{ project.conditions }}
+          </p>
         </template>
       </Card>
 
@@ -135,8 +137,12 @@ function formatTime(timestamp) {
         <template #title>Garden Advisor Chat</template>
         <template #content>
           <div ref="scrollEl" class="flex flex-col gap-3 h-[50vh] overflow-y-auto p-2">
-            <p v-if="!messages.length && !pendingMessages.length" class="text-center text-surface-400 text-sm mt-8">
-              Ask about what to plant, how to prepare the space, or anything else about this project.
+            <p
+              v-if="!messages.length && !pendingMessages.length"
+              class="text-center text-surface-400 text-sm mt-8"
+            >
+              Ask about what to plant, how to prepare the space, or anything else about this
+              project.
             </p>
             <div
               v-for="m in messages"
@@ -156,7 +162,10 @@ function formatTime(timestamp) {
               :key="`pending-${i}`"
               class="flex flex-col max-w-[80%] self-end items-end opacity-60"
             >
-              <div class="chat-bubble chat-bubble-user rounded-lg px-3 py-2 text-sm" v-html="renderMarkdownLite(m.content)"></div>
+              <div
+                class="chat-bubble chat-bubble-user rounded-lg px-3 py-2 text-sm"
+                v-html="renderMarkdownLite(m.content)"
+              ></div>
             </div>
             <div v-if="sending" class="flex items-center gap-2 self-start text-surface-400 text-sm">
               <ProgressSpinner style="width: 16px; height: 16px" :strokeWidth="6" />
@@ -164,7 +173,9 @@ function formatTime(timestamp) {
             </div>
           </div>
 
-          <Message v-if="sendError" severity="error" :closable="false" class="mt-3">{{ sendError }}</Message>
+          <Message v-if="sendError" severity="error" :closable="false" class="mt-3">{{
+            sendError
+          }}</Message>
 
           <div class="flex gap-2 mt-3">
             <Textarea
@@ -190,32 +201,98 @@ function formatTime(timestamp) {
   color: #ffffff;
 }
 
+.chat-bubble {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .chat-bubble-assistant {
-  background-color: #f1f1f1;
-  color: #1f1f1f;
+  background-color: var(--p-gray-900);
+  color: #f5f5f5;
 }
 
 /* The global base reset (src/assets/base.css) sets font-weight: normal on
-   every element, which would otherwise flatten <strong> back to regular
-   weight - these rules are unlayered so they win over that reset. */
+   every element, and Tailwind's preflight sets heading font-size/weight to
+   `inherit` - both would otherwise flatten everything marked.js produces
+   back to plain text. These rules are unlayered so they win over both. */
 .chat-bubble :deep(strong) {
   font-weight: 600;
 }
 .chat-bubble :deep(em) {
   font-style: italic;
 }
+.chat-bubble :deep(h1),
+.chat-bubble :deep(h2),
+.chat-bubble :deep(h3),
+.chat-bubble :deep(h4) {
+  font-weight: 600;
+  margin: 0.75rem 0 0.4rem;
+}
+.chat-bubble :deep(h1:first-child),
+.chat-bubble :deep(h2:first-child),
+.chat-bubble :deep(h3:first-child),
+.chat-bubble :deep(h4:first-child) {
+  margin-top: 0;
+}
+.chat-bubble :deep(h1) {
+  font-size: 1.25rem;
+}
+.chat-bubble :deep(h2) {
+  font-size: 1.125rem;
+}
+.chat-bubble :deep(h3),
+.chat-bubble :deep(h4) {
+  font-size: 1rem;
+}
 .chat-bubble :deep(p) {
   margin: 0 0 0.5rem;
 }
-.chat-bubble :deep(p:last-child) {
-  margin-bottom: 0;
-}
-.chat-bubble :deep(ul) {
+.chat-bubble :deep(ul),
+.chat-bubble :deep(ol) {
   margin: 0 0 0.5rem;
   padding-left: 1.25rem;
+}
+.chat-bubble :deep(ul) {
   list-style: disc;
 }
-.chat-bubble :deep(ul:last-child) {
+.chat-bubble :deep(ol) {
+  list-style: decimal;
+}
+.chat-bubble :deep(p:last-child),
+.chat-bubble :deep(ul:last-child),
+.chat-bubble :deep(ol:last-child),
+.chat-bubble :deep(table:last-child) {
   margin-bottom: 0;
+}
+.chat-bubble :deep(code) {
+  background-color: rgba(0, 0, 0, 0.12);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.85em;
+}
+.chat-bubble :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.12);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  overflow-x: auto;
+  margin: 0 0 0.5rem;
+}
+.chat-bubble :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+.chat-bubble :deep(table) {
+  border-collapse: collapse;
+  margin: 0 0 0.5rem;
+  font-size: 0.85em;
+}
+.chat-bubble :deep(th),
+.chat-bubble :deep(td) {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}
+.chat-bubble :deep(th) {
+  font-weight: 600;
 }
 </style>

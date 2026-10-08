@@ -21,10 +21,19 @@
         <div class="flex items-center gap-2">
           <InputText placeholder="Search" type="text" class="w-36" />
           <Avatar
-            icon="User"
+            v-if="user"
+            :label="avatarInitial(user.displayName, user.email)"
             shape="circle"
             class="cursor-pointer"
-            @click="router.push(user ? '/Profile' : '/SignIn')"
+            :style="{ backgroundColor: avatarColorFor(user.uid), color: '#ffffff' }"
+            @click="router.push('/Profile')"
+          />
+          <Avatar
+            v-else
+            :icon="User"
+            shape="circle"
+            class="cursor-pointer"
+            @click="router.push('/SignIn')"
           />
         </div>
       </template>
@@ -38,6 +47,7 @@ import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { getAuth, signOut } from 'firebase/auth'
 import { useAuth } from '../composables/useAuth'
+import { avatarColorFor, avatarInitial } from '../utils/avatarColor'
 
 //images and icons
 import logo from '../assets/GBG_Logo.png'
