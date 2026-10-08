@@ -55,6 +55,7 @@ import Server from '@primeicons/vue/server'
 import Calendar from '@primeicons/vue/calendar'
 import SignInIcon from '@primeicons/vue/sign-in'
 import SignOutIcon from '@primeicons/vue/sign-out'
+import Sparkles from '@primeicons/vue/sparkles'
 import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 
 const router = useRouter()
@@ -100,7 +101,7 @@ const items = computed(() => [
   {
     label: 'Community & Events',
     icon: Search,
-    badge: 4,
+    badge: 5,
     items: [
       {
         label: 'News',
@@ -124,6 +125,11 @@ const items = computed(() => [
         label: 'Click, Read, Plant',
         icon: Bolt,
         command: () => router.push('/ClickReadPlant'),
+      },
+      {
+        label: 'AI Garden Advisor',
+        icon: Sparkles,
+        command: () => router.push('/my-garden-projects'),
       },
     ],
   },

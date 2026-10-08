@@ -11,6 +11,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import AutoComplete from 'primevue/autocomplete'
 import { HVI_RAMP, hviColor } from '@/utils/heatVulnerability'
+import { useAddressSearch } from '@/composables/useAddressSearch'
 
 let map = null
 let searchMarker = null
@@ -24,8 +25,6 @@ const FAUNA_URL =
 const FLORA_URL =
   'https://biod-gis.mapshare.vic.gov.au/arcgis/rest/services/NatureKit/vba_threatened_flora/MapServer/2/query'
 const METRO_BBOX = '144.5,-38.2,145.5,-37.5'
-const ADDRESS_URL =
-  'https://services-ap1.arcgis.com/P744lA0wf4LlBZ84/arcgis/rest/services/Vicmap_Address/FeatureServer/0/query'
 
 function gradientCss(ramp) {
   return `linear-gradient(to right, ${ramp.join(', ')})`
@@ -214,93 +213,7 @@ async function setLayerVisible(entry, nextVisible) {
 }
 
 const selectedAddress = ref('')
-const addressSuggestions = ref([])
-const addressError = ref('')
-
-// Query Vicmap's structured fields (house_number_1 / road_name / locality_name)
-// with prefix matches rather than a substring search on the combined address
-// string. A leading-wildcard LIKE '%...%' on `ezi_address` (a multi-million-row
-// statewide table) measured 10s+ or outright hung on this service once two or
-// more words were involved; prefix matches ('WORD%') on the structured fields
-// come back in well under a second, AND'd together or not.
-function buildAddressWhereClause(query) {
-  const words = query
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean)
-  if (words.length === 0) return null
-
-  let houseNumber = null
-  let rest = words
-  if (/^\d+$/.test(words[0])) {
-    houseNumber = words[0]
-    rest = words.slice(1)
-  }
-  if (rest.length === 0) return null
-
-  const conditions = []
-  if (houseNumber) conditions.push(`house_number_1=${houseNumber}`)
-
-  if (rest.length === 1) {
-    // Could be a street name or a suburb - try both.
-    const word = rest[0]
-    conditions.push(`(road_name LIKE '${word}%' OR locality_name LIKE '${word}%')`)
-  } else {
-    // Natural typed order: "<number> <street words...> <suburb>" - take the
-    // first remaining word as the street name and the last as the suburb.
-    // (They can legitimately be the same word, e.g. "Emerald Lake Rd, Emerald" -
-    // road_name and locality_name are different fields, so no need to dedupe.)
-    const roadWord = rest[0]
-    const suburbWord = rest[rest.length - 1]
-    conditions.push(`road_name LIKE '${roadWord}%'`)
-    conditions.push(`locality_name LIKE '${suburbWord}%'`)
-  }
-
-  return conditions.join(' AND ')
-}
-
-async function searchAddress(event) {
-  const query = event.query?.trim()
-  addressError.value = ''
-  if (!query || query.length < 3) {
-    addressSuggestions.value = []
-    return
-  }
-  const where = buildAddressWhereClause(query)
-  if (!where) {
-    addressSuggestions.value = []
-    return
-  }
-  try {
-    const data = await fetchJson(
-      ADDRESS_URL,
-      {
-        where,
-        outFields: 'ezi_address',
-        outSR: '4326',
-        f: 'geojson',
-        resultRecordCount: '8',
-        orderByFields: 'ezi_address',
-      },
-      { timeoutMs: 8000 },
-    )
-    addressSuggestions.value = (data.features || []).map((feature) => ({
-      label: feature.properties.ezi_address,
-      lat: feature.geometry.coordinates[1],
-      lng: feature.geometry.coordinates[0],
-    }))
-  } catch (err) {
-    addressSuggestions.value = []
-    addressError.value =
-      err?.name === 'AbortError'
-        ? 'Address search timed out - try again.'
-        : 'Address search failed - try again.'
-    console.error('Address search failed:', err)
-  }
-}
+const { addressSuggestions, addressError, searchAddress } = useAddressSearch()
 
 function onAddressSelect(event) {
   const { lat, lng, label } = event.value

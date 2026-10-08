@@ -8,6 +8,8 @@ import ClickReadPlant from '../views/ClickReadPlant.vue'
 import Profile from '../views/Profile.vue'
 import VegetationMap from '../views/VegetationMap.vue'
 import SuburbCanopyData from '../views/SuburbCanopyData.vue'
+import GardenProjects from '../views/GardenProjects.vue'
+import GardenProjectChat from '../views/GardenProjectChat.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -50,6 +52,16 @@ const routes = [
     name: 'SuburbCanopyData',
     component: SuburbCanopyData,
   },
+  {
+    path: '/my-garden-projects',
+    name: 'GardenProjects',
+    component: GardenProjects,
+  },
+  {
+    path: '/my-garden-projects/:id',
+    name: 'GardenProjectChat',
+    component: GardenProjectChat,
+  },
 ]
 
 const router = createRouter({
@@ -58,7 +70,7 @@ const router = createRouter({
 })
 
 const guestOnlyRoutes = ['SignIn', 'FireRegister']
-const authOnlyRoutes = ['Profile']
+const authOnlyRoutes = ['Profile', 'GardenProjects', 'GardenProjectChat']
 
 async function waitForAuthReady() {
   const { ready } = useAuth()

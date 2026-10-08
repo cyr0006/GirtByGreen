@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /projects/{projectId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false;  // enrichment is server-only; no edit/delete flow in scope
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+        allow write: if false;  // Admin SDK only — prevents forged assistant messages
+      }
+    }
+  }
+}
