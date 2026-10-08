@@ -34,7 +34,7 @@ function learnMore() {
       </p>
       <div class="flex gap-4 justify-center">
         <Button label="Get Started" size="large" @click="getStarted" />
-        <Button label="Learn More" severity="secondary" size="large" outlined @click="learnMore" />
+        <Button label="Learn More" severity="info" raised size="large" @click="learnMore" />
       </div>
     </div>
   </div>

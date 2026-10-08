@@ -26,7 +26,7 @@
             shape="circle"
             class="cursor-pointer"
             :style="{ backgroundColor: avatarColorFor(user.uid), color: '#ffffff' }"
-            @click="router.push('/Profile')"
+            @click="toggleProfileMenu"
           />
           <Avatar
             v-else
@@ -35,6 +35,7 @@
             class="cursor-pointer"
             @click="router.push('/SignIn')"
           />
+          <Menu ref="profileMenu" :model="profileMenuItems" :popup="true" />
         </div>
       </template>
     </Menubar>
@@ -42,7 +43,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { getAuth, signOut } from 'firebase/auth'
@@ -52,6 +53,7 @@ import { avatarColorFor, avatarInitial } from '../utils/avatarColor'
 //images and icons
 import logo from '../assets/GBG_Logo.png'
 import Menubar from 'primevue/menubar'
+import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
 import InputText from 'primevue/inputtext'
 import Avatar from 'primevue/avatar'
@@ -73,18 +75,43 @@ const confirm = useConfirm()
 const auth = getAuth()
 const { user } = useAuth()
 
+const profileMenu = ref(null)
+
+function toggleProfileMenu(event) {
+  profileMenu.value?.toggle(event)
+}
+
 function confirmSignOut() {
   confirm.require({
     header: 'Sign Out',
     message: 'Are you sure you want to sign out?',
     icon: ExclamationTriangle,
     acceptLabel: 'Sign Out',
-    rejectLabel: 'Cancel',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+    },
     accept: () => {
       signOut(auth).then(() => router.push('/'))
     },
   })
 }
+
+const profileMenuItems = [
+  {
+    label: 'Profile',
+    icon: User,
+    command: () => router.push('/Profile'),
+  },
+  {
+    separator: true,
+  },
+  {
+    label: 'Sign Out',
+    icon: SignOutIcon,
+    command: confirmSignOut,
+  },
+]
 
 const items = computed(() => [
   {
@@ -92,17 +119,13 @@ const items = computed(() => [
     icon: HomeIcon,
     command: () => router.push('/'),
   },
-  user.value
+  !user.value
     ? {
-        label: 'Sign Out',
-        icon: SignOutIcon,
-        command: confirmSignOut,
-      }
-    : {
         label: 'Sign In',
         icon: SignInIcon,
         command: () => router.push('/SignIn'),
-      },
+      }
+    : null,
   {
     label: 'Events',
     icon: Calendar,
@@ -143,5 +166,5 @@ const items = computed(() => [
       },
     ],
   },
-])
+].filter(Boolean))
 </script>

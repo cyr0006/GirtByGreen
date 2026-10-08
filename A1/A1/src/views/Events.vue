@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -7,6 +7,9 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import SearchIcon from '@primeicons/vue/search'
 import { useAuth } from '../composables/useAuth'
 import { trimmed, containsHtml } from '../utils/validation'
 
@@ -83,6 +86,22 @@ const categorySeverity = {
 }
 
 const categories = ['Outdoors', 'Workshop', 'Online', 'Community']
+
+const categoryFilter = ref(null)
+const searchQuery = ref('')
+
+const filteredEvents = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  return events.value.filter((event) => {
+    if (categoryFilter.value && event.category !== categoryFilter.value) return false
+    if (!query) return true
+    return (
+      event.title.toLowerCase().includes(query) ||
+      event.location.toLowerCase().includes(query) ||
+      event.description.toLowerCase().includes(query)
+    )
+  })
+})
 
 const showDialog = ref(false)
 const errors = ref({})
@@ -175,16 +194,36 @@ function formatDate(dateStr) {
 
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
-    <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold mb-4">Upcoming Events</h1>
-      <p class="text-surface-500 mb-6">
+    <div class="mb-12 text-left">
+      <h1 class="text-4xl font-bold mb-2">Upcoming Events</h1>
+      <p class="text-gray-500 mb-4">
         Browse our upcoming community events. Sign up to get involved and make a difference.
       </p>
       <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" />
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card v-for="event in events" :key="event.id" class="shadow-sm h-full flex flex-col">
+    <div class="flex flex-col sm:flex-row gap-4 mb-8 sm:items-center sm:justify-between">
+      <Select
+        v-model="categoryFilter"
+        :options="categories"
+        showClear
+        placeholder="All formats"
+        class="w-full sm:w-56"
+      />
+      <IconField class="w-full sm:w-72">
+        <InputIcon>
+          <SearchIcon />
+        </InputIcon>
+        <InputText v-model="searchQuery" placeholder="Search events..." class="w-full" />
+      </IconField>
+    </div>
+
+    <p v-if="!filteredEvents.length" class="text-center text-gray-500">
+      No events match your filters.
+    </p>
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Card v-for="event in filteredEvents" :key="event.id" class="shadow-sm h-full flex flex-col">
         <template #title>
           <div class="flex items-start justify-between gap-2">
             <span>{{ event.title }}</span>

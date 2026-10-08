@@ -114,10 +114,14 @@ const highlights = [
     <div class="max-w-6xl mx-auto">
       <h2 class="text-2xl font-bold mb-10 text-center">Why GirtByGreen</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div v-for="item in highlights" :key="item.title" class="text-center p-6">
-          <h3 class="text-xl font-semibold mb-3">{{ item.title }}</h3>
-          <p class="text-gray-500 text-sm leading-relaxed">{{ item.description }}</p>
-        </div>
+        <Card v-for="item in highlights" :key="item.title" class="shadow-sm">
+          <template #content>
+            <div class="text-center p-2">
+              <h3 class="text-xl font-semibold mb-3">{{ item.title }}</h3>
+              <p class="text-gray-500 text-sm leading-relaxed">{{ item.description }}</p>
+            </div>
+          </template>
+        </Card>
       </div>
     </div>
   </section>
@@ -138,7 +142,7 @@ const highlights = [
     transform 0.15s ease;
 }
 .home-quick-link:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--p-primary-color) 35%, transparent);
   transform: translateY(-2px);
 }
 </style>
