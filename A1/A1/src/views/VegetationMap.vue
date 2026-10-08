@@ -197,7 +197,13 @@ async function setLayerVisible(entry, nextVisible) {
     map.addLayer(entry.instance)
     entry.visible = true
   } else {
-    if (entry.instance) map.removeLayer(entry.instance)
+    if (entry.instance) {
+      // Closing any open popup first avoids a leaflet.markercluster/Leaflet 1.9
+      // bug where a popup left open on a removed marker keeps a stale zoom-anim
+      // listener registered on the map, crashing on the next zoom.
+      map.closePopup()
+      map.removeLayer(entry.instance)
+    }
     entry.visible = false
   }
 }
