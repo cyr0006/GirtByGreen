@@ -10,6 +10,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
 import AutoComplete from 'primevue/autocomplete'
+import { HVI_RAMP, hviColor } from '@/utils/heatVulnerability'
 
 let map = null
 let searchMarker = null
@@ -26,31 +27,6 @@ const METRO_BBOX = '144.5,-38.2,145.5,-37.5'
 const ADDRESS_URL =
   'https://services-ap1.arcgis.com/P744lA0wf4LlBZ84/arcgis/rest/services/Vicmap_Address/FeatureServer/0/query'
 
-// Sequential (magnitude) ramp, single hue light->dark, from the dataviz skill's
-// default palette (references/palette.md) - Heat Vulnerability Index is 0-5.
-const HVI_RAMP = [
-  '#cde2fb',
-  '#b7d3f6',
-  '#9ec5f4',
-  '#86b6ef',
-  '#6da7ec',
-  '#5598e7',
-  '#3987e5',
-  '#2a78d6',
-  '#256abf',
-  '#1c5cab',
-  '#184f95',
-  '#104281',
-  '#0d366b',
-]
-function hviColor(v) {
-  if (v == null || Number.isNaN(v)) return '#cccccc'
-  const idx = Math.max(
-    0,
-    Math.min(HVI_RAMP.length - 1, Math.round((v / 5) * (HVI_RAMP.length - 1))),
-  )
-  return HVI_RAMP[idx]
-}
 function gradientCss(ramp) {
   return `linear-gradient(to right, ${ramp.join(', ')})`
 }

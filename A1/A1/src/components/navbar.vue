@@ -100,13 +100,8 @@ const items = computed(() => [
   {
     label: 'Community & Events',
     icon: Search,
-    badge: 3,
+    badge: 4,
     items: [
-      {
-        label: 'Click, Read, Plant',
-        icon: Bolt,
-        command: () => router.push('/ClickReadPlant'),
-      },
       {
         label: 'News',
         icon: Server,
@@ -119,6 +114,16 @@ const items = computed(() => [
         label: 'Vegetation Map',
         icon: Pencil,
         command: () => router.push('/vegetation-map'),
+      },
+      {
+        label: 'Suburb Canopy Data',
+        icon: Server,
+        command: () => router.push('/suburb-canopy-data'),
+      },
+      {
+        label: 'Click, Read, Plant',
+        icon: Bolt,
+        command: () => router.push('/ClickReadPlant'),
       },
     ],
   },

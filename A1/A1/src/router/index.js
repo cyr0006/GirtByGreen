@@ -7,6 +7,7 @@ import Events from '../views/Events.vue'
 import ClickReadPlant from '../views/ClickReadPlant.vue'
 import Profile from '../views/Profile.vue'
 import VegetationMap from '../views/VegetationMap.vue'
+import SuburbCanopyData from '../views/SuburbCanopyData.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -43,6 +44,11 @@ const routes = [
     path: '/vegetation-map',
     name: 'VegetationMap',
     component: VegetationMap,
+  },
+  {
+    path: '/suburb-canopy-data',
+    name: 'SuburbCanopyData',
+    component: SuburbCanopyData,
   },
 ]
 
