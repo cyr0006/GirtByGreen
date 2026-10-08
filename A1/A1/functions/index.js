@@ -7,8 +7,7 @@ admin.initializeApp()
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY')
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY')
-// Swap to 'llama-3.3-70b-versatile' for higher quality at more cost/latency.
-const GROQ_MODEL = 'llama-3.1-8b-instant'
+const GROQ_MODEL = 'openai/gpt-oss-120b'
 
 // Must be a Single Sender you verified in SendGrid, or an address on a domain you authenticated there.
 const FROM_EMAIL = 'acyrus0007@gmail.com'
