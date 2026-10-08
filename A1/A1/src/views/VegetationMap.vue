@@ -1,10 +1,14 @@
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue'
+import { reactive, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import 'leaflet.markercluster'
+import Card from 'primevue/card'
+import ToggleSwitch from 'primevue/toggleswitch'
+import ProgressSpinner from 'primevue/progressspinner'
+import Tag from 'primevue/tag'
 
 let map = null
 
@@ -28,6 +32,9 @@ function hviColor(v) {
   if (v == null || Number.isNaN(v)) return '#cccccc'
   const idx = Math.max(0, Math.min(HVI_RAMP.length - 1, Math.round((v / 5) * (HVI_RAMP.length - 1))))
   return HVI_RAMP[idx]
+}
+function gradientCss(ramp) {
+  return `linear-gradient(to right, ${ramp.join(', ')})`
 }
 
 // Categorical (identity) slots 1 & 2, fixed order, from the same default palette.
@@ -72,6 +79,15 @@ async function fetchJson(url, params) {
   const res = await fetch(`${url}?${qs}`)
   if (!res.ok) throw new Error(`Request to ${url} failed: ${res.status}`)
   return res.json()
+}
+
+async function buildTreeCoverLayer() {
+  return L.tileLayer(TREE_EXTENT_URL, {
+    maxZoom: 19,
+    opacity: 0.7,
+    attribution:
+      'Vegetation, heat & biodiversity data &copy; State of Victoria (<a href="https://www.data.vic.gov.au/">data.vic.gov.au</a>), CC BY 4.0',
+  })
 }
 
 async function buildHeatVulnerabilityLayer() {
@@ -120,39 +136,87 @@ async function buildBiodiversityLayer() {
   return sightings
 }
 
+// Each entry drives both the map layer and its own on/off + legend UI - the
+// legend only ever reflects the layer(s) actually switched on (see template).
+const layers = reactive([
+  {
+    key: 'treeCover',
+    label: 'Tree cover',
+    description: 'Statewide tree canopy classification (Vicmap Vegetation Tree Extent).',
+    visible: false,
+    loading: false,
+    error: null,
+    instance: null,
+    build: buildTreeCoverLayer,
+    legend: { kind: 'swatch', color: '#2f6b2f', opacity: 0.7, label: 'Tree canopy' },
+  },
+  {
+    key: 'heatVulnerability',
+    label: 'Heat vulnerability (2018)',
+    description: 'Suburb-level index combining heat exposure with population vulnerability.',
+    visible: false,
+    loading: false,
+    error: null,
+    instance: null,
+    build: buildHeatVulnerabilityLayer,
+    legend: { kind: 'gradient', ramp: HVI_RAMP, minLabel: 'Low', maxLabel: 'High' },
+  },
+  {
+    key: 'biodiversity',
+    label: 'Biodiversity sightings',
+    description: 'Threatened species records near Melbourne (Victorian Biodiversity Atlas, sample of up to 1000 per group).',
+    visible: false,
+    loading: false,
+    error: null,
+    instance: null,
+    build: buildBiodiversityLayer,
+    legend: {
+      kind: 'categories',
+      items: [
+        { label: 'Fauna', color: FAUNA_COLOR },
+        { label: 'Flora', color: FLORA_COLOR },
+      ],
+    },
+  },
+])
+
+async function setLayerVisible(entry, nextVisible) {
+  if (nextVisible) {
+    if (!entry.instance) {
+      entry.loading = true
+      entry.error = null
+      try {
+        entry.instance = await entry.build()
+      } catch {
+        entry.error = 'Could not load this layer right now.'
+        entry.loading = false
+        return
+      }
+      entry.loading = false
+    }
+    map.addLayer(entry.instance)
+    entry.visible = true
+  } else {
+    if (entry.instance) map.removeLayer(entry.instance)
+    entry.visible = false
+  }
+}
+
 onMounted(async () => {
   map = L.map('vegetation-map', {
     center: [-37.81, 144.96],
     zoom: 11,
   })
 
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map)
 
-  const treeExtent = L.tileLayer(TREE_EXTENT_URL, {
-    maxZoom: 19,
-    opacity: 0.7,
-    attribution:
-      'Vegetation, heat & biodiversity data &copy; State of Victoria (<a href="https://www.data.vic.gov.au/">data.vic.gov.au</a>), CC BY 4.0',
-  }).addTo(map)
-
-  const overlays = { 'Tree cover': treeExtent }
-
-  const [hviLayer, biodiversityLayer] = await Promise.allSettled([
-    buildHeatVulnerabilityLayer(),
-    buildBiodiversityLayer(),
-  ])
-
-  if (hviLayer.status === 'fulfilled') {
-    overlays['Heat vulnerability (2018)'] = hviLayer.value
-  }
-  if (biodiversityLayer.status === 'fulfilled') {
-    overlays['Biodiversity sightings'] = biodiversityLayer.value
-  }
-
-  L.control.layers({ OpenStreetMap: osm }, overlays).addTo(map)
+  await setLayerVisible(
+    layers.find((l) => l.key === 'treeCover'),
+    true,
+  )
 })
 
 onBeforeUnmount(() => {
@@ -170,15 +234,75 @@ onBeforeUnmount(() => {
   >
     Vegetation Cover Map
   </h1>
-  <p class="text-xl mb-2 text-surface-200 flex justify-center">
+  <p class="text-xl mb-8 text-surface-200 flex justify-center">
     Explore tree cover, heat vulnerability and biodiversity across Melbourne and Victoria.
   </p>
-  <p class="text-sm mb-6 text-surface-400 flex justify-center">
-    Biodiversity sightings: <span style="color: #2a78d6">●</span> fauna ·
-    <span style="color: #eb6834">●</span> flora (threatened species, Victorian Biodiversity Atlas)
-  </p>
-  <div class="vegetation-map-wrapper">
-    <div id="vegetation-map" class="h-[70vh] w-full"></div>
+
+  <div class="vegetation-map-wrapper flex flex-col lg:flex-row gap-4">
+    <div
+      id="vegetation-map"
+      class="h-[70vh] w-full lg:flex-1 rounded-xl overflow-hidden border border-surface-200 shadow-md"
+    ></div>
+
+    <Card class="w-full lg:w-80 shrink-0">
+      <template #title>Map layers</template>
+      <template #content>
+        <div class="flex flex-col gap-5">
+          <div v-for="entry in layers" :key="entry.key" class="flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-3">
+              <label :for="entry.key" class="text-sm font-medium cursor-pointer">{{ entry.label }}</label>
+              <div class="flex items-center gap-2">
+                <ProgressSpinner
+                  v-if="entry.loading"
+                  style="width: 16px; height: 16px"
+                  strokeWidth="6"
+                />
+                <Tag v-else-if="entry.error" severity="danger" value="Unavailable" />
+                <ToggleSwitch
+                  :inputId="entry.key"
+                  :modelValue="entry.visible"
+                  :disabled="entry.loading"
+                  @update:modelValue="(val) => setLayerVisible(entry, val)"
+                />
+              </div>
+            </div>
+            <p class="text-xs text-surface-400">{{ entry.description }}</p>
+
+            <div v-if="entry.visible && !entry.loading && !entry.error" class="pt-1">
+              <div v-if="entry.legend.kind === 'swatch'" class="flex items-center gap-2 text-xs">
+                <span
+                  class="inline-block w-4 h-4 rounded shrink-0"
+                  :style="{ backgroundColor: entry.legend.color, opacity: entry.legend.opacity }"
+                ></span>
+                <span>{{ entry.legend.label }}</span>
+              </div>
+
+              <div v-else-if="entry.legend.kind === 'gradient'">
+                <div class="h-3 rounded-full" :style="{ background: gradientCss(entry.legend.ramp) }"></div>
+                <div class="flex justify-between text-xs text-surface-400 mt-1">
+                  <span>{{ entry.legend.minLabel }}</span>
+                  <span>{{ entry.legend.maxLabel }}</span>
+                </div>
+              </div>
+
+              <div v-else-if="entry.legend.kind === 'categories'" class="flex flex-col gap-1">
+                <div
+                  v-for="item in entry.legend.items"
+                  :key="item.label"
+                  class="flex items-center gap-2 text-xs"
+                >
+                  <span
+                    class="inline-block w-3 h-3 rounded-full shrink-0"
+                    :style="{ backgroundColor: item.color }"
+                  ></span>
+                  <span>{{ item.label }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
