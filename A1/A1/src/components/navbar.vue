@@ -19,7 +19,6 @@
       </template>
       <template #end>
         <div class="flex items-center gap-2">
-          <InputText placeholder="Search" type="text" class="w-36" />
           <Avatar
             v-if="user"
             :label="avatarInitial(user.displayName, user.email)"
@@ -55,7 +54,6 @@ import logo from '../assets/GBG_Logo.png'
 import Menubar from 'primevue/menubar'
 import Menu from 'primevue/menu'
 import Badge from 'primevue/badge'
-import InputText from 'primevue/inputtext'
 import Avatar from 'primevue/avatar'
 import Ripple from 'primevue/ripple'
 import User from '@primeicons/vue/user'
@@ -86,7 +84,10 @@ function confirmSignOut() {
     header: 'Sign Out',
     message: 'Are you sure you want to sign out?',
     icon: ExclamationTriangle,
-    acceptLabel: 'Sign Out',
+    acceptProps: {
+      label: 'Sign Out',
+      severity: 'danger',
+    },
     rejectProps: {
       label: 'Cancel',
       severity: 'secondary',
@@ -113,58 +114,60 @@ const profileMenuItems = [
   },
 ]
 
-const items = computed(() => [
-  {
-    label: 'Home',
-    icon: HomeIcon,
-    command: () => router.push('/'),
-  },
-  !user.value
-    ? {
-        label: 'Sign In',
-        icon: SignInIcon,
-        command: () => router.push('/SignIn'),
-      }
-    : null,
-  {
-    label: 'Events',
-    icon: Calendar,
-    command: () => router.push('/events'),
-  },
-  {
-    label: 'Community & Events',
-    icon: Search,
-    badge: 5,
-    items: [
-      {
-        label: 'News',
-        icon: Server,
-        command: () => router.push('/projects/blocks'),
-      },
-      {
-        separator: true,
-      },
-      {
-        label: 'Vegetation Map',
-        icon: Pencil,
-        command: () => router.push('/vegetation-map'),
-      },
-      {
-        label: 'Suburb Canopy Data',
-        icon: Server,
-        command: () => router.push('/suburb-canopy-data'),
-      },
-      {
-        label: 'Click, Read, Plant',
-        icon: Bolt,
-        command: () => router.push('/ClickReadPlant'),
-      },
-      {
-        label: 'AI Garden Advisor',
-        icon: Sparkles,
-        command: () => router.push('/my-garden-projects'),
-      },
-    ],
-  },
-].filter(Boolean))
+const items = computed(() =>
+  [
+    {
+      label: 'Home',
+      icon: HomeIcon,
+      command: () => router.push('/'),
+    },
+    !user.value
+      ? {
+          label: 'Sign In',
+          icon: SignInIcon,
+          command: () => router.push('/SignIn'),
+        }
+      : null,
+    {
+      label: 'Events',
+      icon: Calendar,
+      command: () => router.push('/events'),
+    },
+    {
+      label: 'News and Resources',
+      icon: Search,
+      badge: 5,
+      items: [
+        {
+          label: 'News',
+          icon: Server,
+          command: () => router.push('/projects/blocks'),
+        },
+        {
+          separator: true,
+        },
+        {
+          label: 'Vegetation Map',
+          icon: Pencil,
+          command: () => router.push('/vegetation-map'),
+        },
+        {
+          label: 'Suburb Canopy Data',
+          icon: Server,
+          command: () => router.push('/suburb-canopy-data'),
+        },
+        {
+          label: 'Click, Read, Plant',
+          icon: Bolt,
+          command: () => router.push('/ClickReadPlant'),
+        },
+        {
+          label: 'AI Garden Advisor',
+          icon: Sparkles,
+          command: () => router.push('/my-garden-projects'),
+        },
+      ],
+    },
+  ].filter(Boolean),
+)
 </script>

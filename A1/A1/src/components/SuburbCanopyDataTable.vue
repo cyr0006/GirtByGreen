@@ -71,7 +71,13 @@ function pct(value) {
     >
       <template #header>
         <div class="flex justify-between items-center gap-4">
-          <Button type="button" label="Clear filters" outlined @click="clearFilter()">
+          <Button
+            type="button"
+            label="Clear filters"
+            severity="secondary"
+            outlined
+            @click="clearFilter()"
+          >
             <template #icon>
               <FilterSlash />
             </template>

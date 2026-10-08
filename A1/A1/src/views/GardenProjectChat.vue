@@ -114,6 +114,7 @@ function formatTime(timestamp) {
     <Button
       label="Back to projects"
       icon="pi pi-arrow-left"
+      severity="secondary"
       text
       class="mb-4"
       @click="router.push('/my-garden-projects')"

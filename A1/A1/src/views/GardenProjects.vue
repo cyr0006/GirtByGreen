@@ -109,9 +109,9 @@ function formatDate(timestamp) {
 
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
-    <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold mb-4">AI Garden Advisor</h1>
-      <p class="text-surface-500 mb-6">
+    <div class="mb-12 text-left">
+      <h1 class="text-4xl font-bold mb-2">AI Garden Advisor</h1>
+      <p class="text-gray-500 mb-4">
         Create a project for your garden and chat with an AI advisor for tailored planting advice.
       </p>
       <Button icon="pi pi-plus" label="New Project" @click="openDialog" />

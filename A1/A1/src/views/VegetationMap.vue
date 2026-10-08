@@ -254,15 +254,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <h1
-    class="text-5xl font-bold flex justify-center"
-    style="color: var(--p-primary-color); margin-bottom: 15px; margin-top: 2rem"
-  >
-    Vegetation Cover Map
-  </h1>
-  <p class="text-xl mb-8 text-surface-200 flex justify-center">
-    Explore tree cover, heat vulnerability and biodiversity across Melbourne and Victoria.
-  </p>
+  <div class="px-8 pt-10 mb-8 text-left">
+    <h1 class="text-4xl font-bold mb-2">Vegetation Cover Map</h1>
+    <p class="text-gray-500 mb-4">
+      Explore tree cover, heat vulnerability and biodiversity across Melbourne and Victoria.
+    </p>
+  </div>
 
   <div class="vegetation-map-wrapper flex flex-col lg:flex-row gap-4">
     <div

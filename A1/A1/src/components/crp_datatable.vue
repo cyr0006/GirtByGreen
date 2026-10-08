@@ -21,12 +21,24 @@
       <template #header>
         <div class="flex justify-between items-center gap-4">
           <div class="flex items-center gap-2">
-            <Button type="button" label="Clear" outlined @click="clearFilter()">
+            <Button
+              type="button"
+              label="Clear"
+              severity="secondary"
+              outlined
+              @click="clearFilter()"
+            >
               <template #icon>
                 <FilterSlash />
               </template>
             </Button>
-            <Button type="button" label="Export" outlined @click="openExportDialog()">
+            <Button
+              type="button"
+              label="Export"
+              severity="secondary"
+              outlined
+              @click="openExportDialog()"
+            >
               <template #icon>
                 <FileExcel />
               </template>
@@ -286,7 +298,12 @@
       </div>
 
       <template #footer>
-        <Button label="Cancel" outlined @click="exportDialogVisible = false" />
+        <Button
+          label="Cancel"
+          severity="secondary"
+          outlined
+          @click="exportDialogVisible = false"
+        />
         <Button
           :label="exportMode === 'email' ? 'Send' : 'Download'"
           :loading="exportSending"
