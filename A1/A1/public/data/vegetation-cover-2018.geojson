@@ -1,0 +1,34 @@
+{
+  "type": "FeatureCollection",
+  "_comment": "PLACEHOLDER sample data, not the real dataset. Replace this file with the converted/reprojected 'Vegetation Cover for Metropolitan Melbourne 2018' GeoJSON from data.vic.gov.au (see plan notes). These two polygons only approximate Royal Park and Yarra Bend Park so the map has something to render during development.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Royal Park (sample)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [144.9484, -37.7820],
+          [144.9560, -37.7820],
+          [144.9560, -37.7870],
+          [144.9484, -37.7870],
+          [144.9484, -37.7820]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Yarra Bend Park (sample)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [145.0100, -37.7850],
+          [145.0220, -37.7850],
+          [145.0220, -37.7950],
+          [145.0100, -37.7950],
+          [145.0100, -37.7850]
+        ]]
+      }
+    }
+  ]
+}

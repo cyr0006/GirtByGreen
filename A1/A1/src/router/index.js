@@ -6,6 +6,7 @@ import FirebaseRegister from '../views/FirebaseRegister.vue'
 import Events from '../views/Events.vue'
 import ClickReadPlant from '../views/ClickReadPlant.vue'
 import Profile from '../views/Profile.vue'
+import VegetationMap from '../views/VegetationMap.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -37,6 +38,11 @@ const routes = [
     path: '/Profile',
     name: 'Profile',
     component: Profile,
+  },
+  {
+    path: '/vegetation-map',
+    name: 'VegetationMap',
+    component: VegetationMap,
   },
 ]
 

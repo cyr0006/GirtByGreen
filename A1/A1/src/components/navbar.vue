@@ -116,9 +116,9 @@ const items = computed(() => [
         separator: true,
       },
       {
-        label: 'Canpy Map',
+        label: 'Vegetation Map',
         icon: Pencil,
-        command: () => router.push('/projects/ui-kit'),
+        command: () => router.push('/vegetation-map'),
       },
     ],
   },
