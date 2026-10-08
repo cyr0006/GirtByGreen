@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
@@ -9,8 +9,10 @@ import Card from 'primevue/card'
 import ToggleSwitch from 'primevue/toggleswitch'
 import ProgressSpinner from 'primevue/progressspinner'
 import Tag from 'primevue/tag'
+import AutoComplete from 'primevue/autocomplete'
 
 let map = null
+let searchMarker = null
 
 const TREE_EXTENT_URL =
   'https://tiles-ap1.arcgis.com/P744lA0wf4LlBZ84/arcgis/rest/services/Vicmap_Vegetation_Tree_Extent/MapServer/tile/{z}/{y}/{x}'
@@ -21,16 +23,32 @@ const FAUNA_URL =
 const FLORA_URL =
   'https://biod-gis.mapshare.vic.gov.au/arcgis/rest/services/NatureKit/vba_threatened_flora/MapServer/2/query'
 const METRO_BBOX = '144.5,-38.2,145.5,-37.5'
+const ADDRESS_URL =
+  'https://services-ap1.arcgis.com/P744lA0wf4LlBZ84/arcgis/rest/services/Vicmap_Address/FeatureServer/0/query'
 
 // Sequential (magnitude) ramp, single hue light->dark, from the dataviz skill's
 // default palette (references/palette.md) - Heat Vulnerability Index is 0-5.
 const HVI_RAMP = [
-  '#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7',
-  '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b',
+  '#cde2fb',
+  '#b7d3f6',
+  '#9ec5f4',
+  '#86b6ef',
+  '#6da7ec',
+  '#5598e7',
+  '#3987e5',
+  '#2a78d6',
+  '#256abf',
+  '#1c5cab',
+  '#184f95',
+  '#104281',
+  '#0d366b',
 ]
 function hviColor(v) {
   if (v == null || Number.isNaN(v)) return '#cccccc'
-  const idx = Math.max(0, Math.min(HVI_RAMP.length - 1, Math.round((v / 5) * (HVI_RAMP.length - 1))))
+  const idx = Math.max(
+    0,
+    Math.min(HVI_RAMP.length - 1, Math.round((v / 5) * (HVI_RAMP.length - 1))),
+  )
   return HVI_RAMP[idx]
 }
 function gradientCss(ramp) {
@@ -74,11 +92,19 @@ function toSpeciesMarkers(featureCollection, color) {
   })
 }
 
-async function fetchJson(url, params) {
+async function fetchJson(url, params, { timeoutMs } = {}) {
   const qs = new URLSearchParams(params).toString()
-  const res = await fetch(`${url}?${qs}`)
-  if (!res.ok) throw new Error(`Request to ${url} failed: ${res.status}`)
-  return res.json()
+  const controller = timeoutMs ? new AbortController() : null
+  const timer = timeoutMs ? setTimeout(() => controller.abort(), timeoutMs) : null
+  try {
+    const res = await fetch(`${url}?${qs}`, controller ? { signal: controller.signal } : {})
+    if (!res.ok) throw new Error(`Request to ${url} failed: ${res.status}`)
+    const data = await res.json()
+    if (data.error) throw new Error(data.error.message || data.error.details?.[0] || 'Service returned an error')
+    return data
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
 }
 
 async function buildTreeCoverLayer() {
@@ -106,7 +132,9 @@ async function buildHeatVulnerabilityLayer() {
     }),
     onEachFeature: (feature, layer) => {
       const { LOCALITY, HVI_2018 } = feature.properties
-      layer.bindPopup(`<strong>${LOCALITY}</strong><br>Heat Vulnerability Index: ${HVI_2018 ?? 'n/a'} / 5`)
+      layer.bindPopup(
+        `<strong>${LOCALITY}</strong><br>Heat Vulnerability Index: ${HVI_2018 ?? 'n/a'} / 5`,
+      )
     },
   })
 }
@@ -164,7 +192,8 @@ const layers = reactive([
   {
     key: 'biodiversity',
     label: 'Biodiversity sightings',
-    description: 'Threatened species records near Melbourne (Victorian Biodiversity Atlas, sample of up to 1000 per group).',
+    description:
+      'Threatened species records near Melbourne (Victorian Biodiversity Atlas, sample of up to 1000 per group).',
     visible: false,
     loading: false,
     error: null,
@@ -208,6 +237,107 @@ async function setLayerVisible(entry, nextVisible) {
   }
 }
 
+const selectedAddress = ref('')
+const addressSuggestions = ref([])
+const addressError = ref('')
+
+// Query Vicmap's structured fields (house_number_1 / road_name / locality_name)
+// with prefix matches rather than a substring search on the combined address
+// string. A leading-wildcard LIKE '%...%' on `ezi_address` (a multi-million-row
+// statewide table) measured 10s+ or outright hung on this service once two or
+// more words were involved; prefix matches ('WORD%') on the structured fields
+// come back in well under a second, AND'd together or not.
+function buildAddressWhereClause(query) {
+  const words = query
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+  if (words.length === 0) return null
+
+  let houseNumber = null
+  let rest = words
+  if (/^\d+$/.test(words[0])) {
+    houseNumber = words[0]
+    rest = words.slice(1)
+  }
+  if (rest.length === 0) return null
+
+  const conditions = []
+  if (houseNumber) conditions.push(`house_number_1=${houseNumber}`)
+
+  if (rest.length === 1) {
+    // Could be a street name or a suburb - try both.
+    const word = rest[0]
+    conditions.push(`(road_name LIKE '${word}%' OR locality_name LIKE '${word}%')`)
+  } else {
+    // Natural typed order: "<number> <street words...> <suburb>" - take the
+    // first remaining word as the street name and the last as the suburb.
+    // (They can legitimately be the same word, e.g. "Emerald Lake Rd, Emerald" -
+    // road_name and locality_name are different fields, so no need to dedupe.)
+    const roadWord = rest[0]
+    const suburbWord = rest[rest.length - 1]
+    conditions.push(`road_name LIKE '${roadWord}%'`)
+    conditions.push(`locality_name LIKE '${suburbWord}%'`)
+  }
+
+  return conditions.join(' AND ')
+}
+
+async function searchAddress(event) {
+  const query = event.query?.trim()
+  addressError.value = ''
+  if (!query || query.length < 3) {
+    addressSuggestions.value = []
+    return
+  }
+  const where = buildAddressWhereClause(query)
+  if (!where) {
+    addressSuggestions.value = []
+    return
+  }
+  try {
+    const data = await fetchJson(
+      ADDRESS_URL,
+      {
+        where,
+        outFields: 'ezi_address',
+        outSR: '4326',
+        f: 'geojson',
+        resultRecordCount: '8',
+        orderByFields: 'ezi_address',
+      },
+      { timeoutMs: 8000 },
+    )
+    addressSuggestions.value = (data.features || []).map((feature) => ({
+      label: feature.properties.ezi_address,
+      lat: feature.geometry.coordinates[1],
+      lng: feature.geometry.coordinates[0],
+    }))
+  } catch (err) {
+    addressSuggestions.value = []
+    addressError.value =
+      err?.name === 'AbortError'
+        ? 'Address search timed out - try again.'
+        : 'Address search failed - try again.'
+    console.error('Address search failed:', err)
+  }
+}
+
+function onAddressSelect(event) {
+  const { lat, lng, label } = event.value
+  if (!map) return
+  if (searchMarker) {
+    searchMarker.setLatLng([lat, lng])
+  } else {
+    searchMarker = L.marker([lat, lng]).addTo(map)
+  }
+  searchMarker.bindPopup(label).openPopup()
+  map.flyTo([lat, lng], 17)
+}
+
 onMounted(async () => {
   map = L.map('vegetation-map', {
     center: [-37.81, 144.96],
@@ -216,7 +346,8 @@ onMounted(async () => {
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map)
 
   await setLayerVisible(
@@ -250,65 +381,92 @@ onBeforeUnmount(() => {
       class="h-[70vh] w-full lg:flex-1 rounded-xl overflow-hidden border border-surface-200 shadow-md"
     ></div>
 
-    <Card class="w-full lg:w-80 shrink-0">
-      <template #title>Map layers</template>
-      <template #content>
-        <div class="flex flex-col gap-5">
-          <div v-for="entry in layers" :key="entry.key" class="flex flex-col gap-2">
-            <div class="flex items-center justify-between gap-3">
-              <label :for="entry.key" class="text-sm font-medium cursor-pointer">{{ entry.label }}</label>
-              <div class="flex items-center gap-2">
-                <ProgressSpinner
-                  v-if="entry.loading"
-                  style="width: 16px; height: 16px"
-                  strokeWidth="6"
-                />
-                <Tag v-else-if="entry.error" severity="danger" value="Unavailable" />
-                <ToggleSwitch
-                  :inputId="entry.key"
-                  :modelValue="entry.visible"
-                  :disabled="entry.loading"
-                  @update:modelValue="(val) => setLayerVisible(entry, val)"
-                />
-              </div>
-            </div>
-            <p class="text-xs text-surface-400">{{ entry.description }}</p>
+    <div class="flex flex-col gap-4 w-full lg:w-80 shrink-0">
+      <Card>
+        <template #title>Find an address</template>
+        <template #content>
+          <AutoComplete
+            v-model="selectedAddress"
+            :suggestions="addressSuggestions"
+            optionLabel="label"
+            placeholder="Search a Victorian address..."
+            class="w-full"
+            :inputStyle="{ width: '100%' }"
+            @complete="searchAddress"
+            @option-select="onAddressSelect"
+          />
+          <p v-if="addressError" class="text-xs mt-2" style="color: var(--p-red-500)">
+            {{ addressError }}
+          </p>
+          <p v-else class="text-xs text-surface-400 mt-2">Powered by Vicmap Address (data.vic.gov.au)</p>
+        </template>
+      </Card>
 
-            <div v-if="entry.visible && !entry.loading && !entry.error" class="pt-1">
-              <div v-if="entry.legend.kind === 'swatch'" class="flex items-center gap-2 text-xs">
-                <span
-                  class="inline-block w-4 h-4 rounded shrink-0"
-                  :style="{ backgroundColor: entry.legend.color, opacity: entry.legend.opacity }"
-                ></span>
-                <span>{{ entry.legend.label }}</span>
-              </div>
-
-              <div v-else-if="entry.legend.kind === 'gradient'">
-                <div class="h-3 rounded-full" :style="{ background: gradientCss(entry.legend.ramp) }"></div>
-                <div class="flex justify-between text-xs text-surface-400 mt-1">
-                  <span>{{ entry.legend.minLabel }}</span>
-                  <span>{{ entry.legend.maxLabel }}</span>
+      <Card>
+        <template #title>Map layers</template>
+        <template #content>
+          <div class="flex flex-col gap-5">
+            <div v-for="entry in layers" :key="entry.key" class="flex flex-col gap-2">
+              <div class="flex items-center justify-between gap-3">
+                <label :for="entry.key" class="text-sm font-medium cursor-pointer">{{
+                  entry.label
+                }}</label>
+                <div class="flex items-center gap-2">
+                  <ProgressSpinner
+                    v-if="entry.loading"
+                    style="width: 16px; height: 16px"
+                    strokeWidth="6"
+                  />
+                  <Tag v-else-if="entry.error" severity="danger" value="Unavailable" />
+                  <ToggleSwitch
+                    :inputId="entry.key"
+                    :modelValue="entry.visible"
+                    :disabled="entry.loading"
+                    @update:modelValue="(val) => setLayerVisible(entry, val)"
+                  />
                 </div>
               </div>
+              <p class="text-xs text-surface-400">{{ entry.description }}</p>
 
-              <div v-else-if="entry.legend.kind === 'categories'" class="flex flex-col gap-1">
-                <div
-                  v-for="item in entry.legend.items"
-                  :key="item.label"
-                  class="flex items-center gap-2 text-xs"
-                >
+              <div v-if="entry.visible && !entry.loading && !entry.error" class="pt-1">
+                <div v-if="entry.legend.kind === 'swatch'" class="flex items-center gap-2 text-xs">
                   <span
-                    class="inline-block w-3 h-3 rounded-full shrink-0"
-                    :style="{ backgroundColor: item.color }"
+                    class="inline-block w-4 h-4 rounded shrink-0"
+                    :style="{ backgroundColor: entry.legend.color, opacity: entry.legend.opacity }"
                   ></span>
-                  <span>{{ item.label }}</span>
+                  <span>{{ entry.legend.label }}</span>
+                </div>
+
+                <div v-else-if="entry.legend.kind === 'gradient'">
+                  <div
+                    class="h-3 rounded-full"
+                    :style="{ background: gradientCss(entry.legend.ramp) }"
+                  ></div>
+                  <div class="flex justify-between text-xs text-surface-400 mt-1">
+                    <span>{{ entry.legend.minLabel }}</span>
+                    <span>{{ entry.legend.maxLabel }}</span>
+                  </div>
+                </div>
+
+                <div v-else-if="entry.legend.kind === 'categories'" class="flex flex-col gap-1">
+                  <div
+                    v-for="item in entry.legend.items"
+                    :key="item.label"
+                    class="flex items-center gap-2 text-xs"
+                  >
+                    <span
+                      class="inline-block w-3 h-3 rounded-full shrink-0"
+                      :style="{ backgroundColor: item.color }"
+                    ></span>
+                    <span>{{ item.label }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </template>
-    </Card>
+        </template>
+      </Card>
+    </div>
   </div>
 </template>
 
