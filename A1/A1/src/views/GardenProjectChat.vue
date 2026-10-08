@@ -9,6 +9,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { ProjectService } from '@/service/ProjectService'
 import { PlantService } from '@/service/PlantService'
 import { trimmed, containsHtml } from '@/utils/validation'
+import { renderMarkdownLite } from '@/utils/markdownLite'
 
 const route = useRoute()
 const router = useRouter()
@@ -144,11 +145,10 @@ function formatTime(timestamp) {
               :class="m.role === 'user' ? 'self-end items-end' : 'self-start items-start'"
             >
               <div
-                class="rounded-lg px-3 py-2 text-sm whitespace-pre-wrap"
-                :class="m.role === 'user' ? 'bg-primary text-primary-contrast' : 'bg-surface-100 text-surface-900'"
-              >
-                {{ m.content }}
-              </div>
+                class="chat-bubble rounded-lg px-3 py-2 text-sm"
+                :class="m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'"
+                v-html="renderMarkdownLite(m.content)"
+              ></div>
               <span class="text-xs text-surface-400 mt-1">{{ formatTime(m.createdAt) }}</span>
             </div>
             <div
@@ -156,12 +156,10 @@ function formatTime(timestamp) {
               :key="`pending-${i}`"
               class="flex flex-col max-w-[80%] self-end items-end opacity-60"
             >
-              <div class="rounded-lg px-3 py-2 text-sm whitespace-pre-wrap bg-primary text-primary-contrast">
-                {{ m.content }}
-              </div>
+              <div class="chat-bubble chat-bubble-user rounded-lg px-3 py-2 text-sm" v-html="renderMarkdownLite(m.content)"></div>
             </div>
             <div v-if="sending" class="flex items-center gap-2 self-start text-surface-400 text-sm">
-              <ProgressSpinner style="width: 16px; height: 16px" strokeWidth="6" />
+              <ProgressSpinner style="width: 16px; height: 16px" :strokeWidth="6" />
               Thinking...
             </div>
           </div>
@@ -185,3 +183,39 @@ function formatTime(timestamp) {
     </template>
   </div>
 </template>
+
+<style scoped>
+.chat-bubble-user {
+  background-color: var(--p-primary-color);
+  color: #ffffff;
+}
+
+.chat-bubble-assistant {
+  background-color: #f1f1f1;
+  color: #1f1f1f;
+}
+
+/* The global base reset (src/assets/base.css) sets font-weight: normal on
+   every element, which would otherwise flatten <strong> back to regular
+   weight - these rules are unlayered so they win over that reset. */
+.chat-bubble :deep(strong) {
+  font-weight: 600;
+}
+.chat-bubble :deep(em) {
+  font-style: italic;
+}
+.chat-bubble :deep(p) {
+  margin: 0 0 0.5rem;
+}
+.chat-bubble :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.chat-bubble :deep(ul) {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.chat-bubble :deep(ul:last-child) {
+  margin-bottom: 0;
+}
+</style>
