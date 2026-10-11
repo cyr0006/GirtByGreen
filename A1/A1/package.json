@@ -16,7 +16,7 @@
     "@fullcalendar/core": "^6.1.21",
     "@fullcalendar/daygrid": "^6.1.21",
     "@fullcalendar/interaction": "^6.1.21",
-    "@fullcalendar/vue3": "^7.1.1",
+    "@fullcalendar/vue3": "6.1.21",
     "@primeicons/vue": "^8.0.0",
     "@primeuix/themes": "^3.0.0",
     "@tailwindcss/vite": "^4.3.3",

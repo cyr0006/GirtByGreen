@@ -15,7 +15,7 @@
           <div class="w-full flex flex-col gap-3 text-sm">
             <div class="flex items-center justify-between">
               <span class="text-surface-500">Account type</span>
-              <Tag :value="roleLabel" :severity="isOrg ? 'info' : 'secondary'" />
+              <Tag :value="roleLabel" :severity="getRoleSeverity" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-surface-500">Member since</span>
@@ -36,9 +36,15 @@ import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import { useAuth } from '../composables/useAuth'
 
-const { user, isOrg } = useAuth()
+const { user, isOrg, isAdmin } = useAuth()
 
-const roleLabel = computed(() => (isOrg.value ? 'Organisation' : 'User'))
+const roleLabel = computed(() => (isOrg.value ? 'Organisation' : isAdmin.value ? 'Admin' : 'User'))
+
+const getRoleSeverity = computed(() => {
+  if (isOrg.value) return 'info'
+  if (isAdmin.value) return 'success'
+  return 'secondary'
+})
 
 const initials = computed(() => {
   const name = user.value?.displayName?.trim()
