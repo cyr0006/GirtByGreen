@@ -287,3 +287,50 @@ exports.sendProjectChatMessage = onCall({ secrets: [GROQ_API_KEY] }, async (requ
     throw new HttpsError('internal', 'Failed to get a reply from the garden advisor.')
   }
 })
+
+// Aggregated, de-identified stats for the community impact charts. Runs on the
+// Admin SDK (bypasses Firestore rules, which otherwise scope /projects reads to
+// each doc's owner) and only ever returns counts grouped by locality/goal/month -
+// never addresses, coordinates or ownerId - so no individual project is exposed.
+exports.getProjectStats = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to view community stats.')
+  }
+
+  const db = admin.firestore()
+  const snapshot = await db.collection('projects').get()
+
+  const byLocality = new Map()
+  const byGoal = new Map()
+  const byMonth = new Map()
+
+  snapshot.forEach((doc) => {
+    const data = doc.data()
+
+    const locality = data.locality || 'Unknown suburb'
+    byLocality.set(locality, (byLocality.get(locality) || 0) + 1)
+
+    const goal = data.goal || 'Unspecified'
+    byGoal.set(goal, (byGoal.get(goal) || 0) + 1)
+
+    const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : null
+    if (createdAt) {
+      const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
+      byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + 1)
+    }
+  })
+
+  const toSortedByCount = (map) =>
+    Array.from(map, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)
+
+  const byMonthSorted = Array.from(byMonth, ([label, count]) => ({ label, count })).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  )
+
+  return {
+    total: snapshot.size,
+    byLocality: toSortedByCount(byLocality).slice(0, 12),
+    byGoal: toSortedByCount(byGoal),
+    byMonth: byMonthSorted,
+  }
+})
