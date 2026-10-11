@@ -11,6 +11,7 @@ import SuburbCanopyData from '../views/SuburbCanopyData.vue'
 import GardenProjects from '../views/GardenProjects.vue'
 import GardenProjectChat from '../views/GardenProjectChat.vue'
 import CommunityImpact from '../views/CommunityImpact.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -68,6 +69,11 @@ const routes = [
     name: 'CommunityImpact',
     component: CommunityImpact,
   },
+  {
+    path: '/admin-dashboard',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+  },
 ]
 
 const router = createRouter({
@@ -77,6 +83,7 @@ const router = createRouter({
 
 const guestOnlyRoutes = ['SignIn', 'FireRegister']
 const authOnlyRoutes = ['Profile', 'GardenProjects', 'GardenProjectChat', 'CommunityImpact']
+const adminOnlyRoutes = ['AdminDashboard']
 
 async function waitForAuthReady() {
   const { ready } = useAuth()
@@ -96,13 +103,22 @@ async function waitForAuthReady() {
 // them to the home page instead, and keep signed-out visitors off pages
 // that require an account (e.g. Profile).
 router.beforeEach(async (to) => {
-  if (!guestOnlyRoutes.includes(to.name) && !authOnlyRoutes.includes(to.name)) return true
+  if (
+    !guestOnlyRoutes.includes(to.name) &&
+    !authOnlyRoutes.includes(to.name) &&
+    !adminOnlyRoutes.includes(to.name)
+  )
+    return true
 
   await waitForAuthReady()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
 
   if (guestOnlyRoutes.includes(to.name) && user.value) return '/'
   if (authOnlyRoutes.includes(to.name) && !user.value) return '/SignIn'
+  if (adminOnlyRoutes.includes(to.name)) {
+    if (!user.value) return '/SignIn'
+    if (!isAdmin.value) return '/'
+  }
   return true
 })
 

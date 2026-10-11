@@ -41,5 +41,6 @@ export function useAuth() {
     ready,
     isOrg: computed(() => role.value === 'org'),
     isUser: computed(() => role.value === 'user'),
+    isAdmin: computed(() => role.value === 'admin'),
   }
 }

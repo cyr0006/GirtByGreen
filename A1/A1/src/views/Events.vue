@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -7,82 +8,65 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
+import Message from 'primevue/message'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import SearchIcon from '@primeicons/vue/search'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
 import { useAuth } from '../composables/useAuth'
 import { trimmed, containsHtml } from '../utils/validation'
+import { EventService } from '../service/EventService'
 
-const { isOrg } = useAuth()
+const router = useRouter()
+const { user, isOrg } = useAuth()
 
-const events = ref([
-  {
-    id: 1,
-    title: 'Community Tree Planting',
-    date: '2026-09-15',
-    location: 'Melbourne Botanic Gardens',
-    description:
-      'Join us for a day of planting native trees across the botanic gardens. All tools and saplings provided.',
-    spots: 30,
-    category: 'Outdoors',
+const events = ref([])
+const myBookingIds = ref(new Set())
+let unsubEvents = null
+let unsubBookings = null
+
+onMounted(() => {
+  unsubEvents = EventService.listenToEvents((rows) => {
+    events.value = rows
+  })
+})
+
+watch(
+  user,
+  (current) => {
+    unsubBookings?.()
+    unsubBookings = null
+    myBookingIds.value = new Set()
+    if (current) {
+      unsubBookings = EventService.listenToMyBookings(current.uid, (ids) => {
+        myBookingIds.value = ids
+      })
+    }
   },
-  {
-    id: 2,
-    title: 'Sustainability Workshop',
-    date: '2026-09-22',
-    location: 'Monash University, Clayton',
-    description:
-      'Learn practical strategies for reducing your carbon footprint at home and in the workplace.',
-    spots: 50,
-    category: 'Workshop',
-  },
-  {
-    id: 3,
-    title: 'Beach Cleanup Drive',
-    date: '2026-10-05',
-    location: 'St Kilda Beach',
-    description:
-      'Help us clean up litter along the coastline. Gloves and bags will be provided on the day.',
-    spots: 40,
-    category: 'Outdoors',
-  },
-  {
-    id: 4,
-    title: 'Green Tech Talk',
-    date: '2026-10-12',
-    location: 'Online via Zoom',
-    description:
-      'A panel discussion on emerging green technologies and their role in fighting climate change.',
-    spots: 100,
-    category: 'Online',
-  },
-  {
-    id: 5,
-    title: 'Farmers Market Volunteer Day',
-    date: '2026-10-20',
-    location: 'Queen Victoria Market',
-    description:
-      'Volunteer at our local farmers market stall promoting sustainable produce and zero-waste packaging.',
-    spots: 15,
-    category: 'Community',
-  },
-  {
-    id: 6,
-    title: 'Seed Swap & Social',
-    date: '2026-11-01',
-    location: 'Fitzroy Community Garden',
-    description:
-      'Bring your leftover seeds and swap with fellow gardeners. Light refreshments provided.',
-    spots: 25,
-    category: 'Community',
-  },
-])
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  unsubEvents?.()
+  unsubBookings?.()
+})
 
 const categorySeverity = {
   Outdoors: 'success',
   Workshop: 'info',
   Online: 'warn',
   Community: 'primary',
+}
+// Fixed per-category colour for the calendar view — same assignment every
+// time, never a cycled/generated hue.
+const categoryColor = {
+  Outdoors: '#16a34a',
+  Workshop: '#2563eb',
+  Online: '#d97706',
+  Community: '#7c3aed',
 }
 
 const categories = ['Outdoors', 'Workshop', 'Online', 'Community']
@@ -103,6 +87,77 @@ const filteredEvents = computed(() => {
   })
 })
 
+function remaining(event) {
+  return Math.max(0, (event.capacity || 0) - (event.bookedCount || 0))
+}
+function isFull(event) {
+  return remaining(event) <= 0
+}
+function isBooked(event) {
+  return myBookingIds.value.has(event.id)
+}
+
+const viewOptions = [
+  { label: 'List', value: 'list' },
+  { label: 'Calendar', value: 'calendar' },
+]
+const activeView = ref('list')
+
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, interactionPlugin],
+  initialView: 'dayGridMonth',
+  height: 'auto',
+  events: filteredEvents.value.map((event) => ({
+    id: event.id,
+    title: event.title,
+    start: event.date,
+    backgroundColor: categoryColor[event.category] || '#6b7280',
+    borderColor: categoryColor[event.category] || '#6b7280',
+  })),
+  eventClick: (info) => {
+    const match = events.value.find((e) => e.id === info.event.id)
+    if (match) openDetails(match)
+  },
+}))
+
+const detailsEvent = ref(null)
+const showDetails = ref(false)
+function openDetails(event) {
+  detailsEvent.value = event
+  showDetails.value = true
+}
+
+const actionError = ref('')
+const bookingBusyId = ref('')
+
+async function register(event) {
+  if (!user.value) {
+    router.push('/SignIn')
+    return
+  }
+  actionError.value = ''
+  bookingBusyId.value = event.id
+  try {
+    await EventService.bookEvent(event.id)
+  } catch (err) {
+    actionError.value = err?.message || 'Could not register for this event. Please try again.'
+  } finally {
+    bookingBusyId.value = ''
+  }
+}
+
+async function cancel(event) {
+  actionError.value = ''
+  bookingBusyId.value = event.id
+  try {
+    await EventService.cancelBooking(event.id)
+  } catch (err) {
+    actionError.value = err?.message || 'Could not cancel this booking. Please try again.'
+  } finally {
+    bookingBusyId.value = ''
+  }
+}
+
 const showDialog = ref(false)
 const errors = ref({})
 const newEvent = ref({
@@ -110,13 +165,14 @@ const newEvent = ref({
   date: '',
   location: '',
   description: '',
-  spots: 0,
+  capacity: 0,
   category: '',
 })
+const creating = ref(false)
 
 function openDialog() {
   if (!isOrg.value) return
-  newEvent.value = { title: '', date: '', location: '', description: '', spots: 0, category: '' }
+  newEvent.value = { title: '', date: '', location: '', description: '', capacity: 0, category: '' }
   errors.value = {}
   showDialog.value = true
 }
@@ -154,12 +210,12 @@ function validate() {
     errors.value.description = 'Description cannot contain < or > characters.'
   }
 
-  if (!newEvent.value.spots || newEvent.value.spots <= 0) {
-    errors.value.spots = 'Spots must be a positive number.'
-  } else if (!Number.isInteger(newEvent.value.spots)) {
-    errors.value.spots = 'Spots must be a whole number.'
-  } else if (newEvent.value.spots > 100000) {
-    errors.value.spots = 'Spots must be 100,000 or fewer.'
+  if (!newEvent.value.capacity || newEvent.value.capacity <= 0) {
+    errors.value.capacity = 'Spots must be a positive number.'
+  } else if (!Number.isInteger(newEvent.value.capacity)) {
+    errors.value.capacity = 'Spots must be a whole number.'
+  } else if (newEvent.value.capacity > 100000) {
+    errors.value.capacity = 'Spots must be 100,000 or fewer.'
   }
 
   if (!newEvent.value.category) {
@@ -169,17 +225,25 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
-function addEvent() {
+async function addEvent() {
   if (!isOrg.value) return
   if (!validate()) return
-  events.value.push({
-    id: events.value.length + 1,
-    ...newEvent.value,
-    title: trimmed(newEvent.value.title),
-    location: trimmed(newEvent.value.location),
-    description: trimmed(newEvent.value.description),
-  })
-  showDialog.value = false
+  creating.value = true
+  try {
+    await EventService.createEvent({
+      title: trimmed(newEvent.value.title),
+      date: newEvent.value.date,
+      location: trimmed(newEvent.value.location),
+      description: trimmed(newEvent.value.description),
+      capacity: newEvent.value.capacity,
+      category: newEvent.value.category,
+    })
+    showDialog.value = false
+  } catch (err) {
+    errors.value.submit = err?.message || 'Could not create this event. Please try again.'
+  } finally {
+    creating.value = false
+  }
 }
 
 function formatDate(dateStr) {
@@ -202,7 +266,13 @@ function formatDate(dateStr) {
       <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" />
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-4 mb-8 sm:items-center sm:justify-between">
+    <Message v-if="actionError" severity="error" closable @close="actionError = ''" class="mb-6">
+      {{ actionError }}
+    </Message>
+
+    <div
+      class="flex flex-col sm:flex-row gap-4 mb-8 sm:items-center sm:justify-between flex-wrap"
+    >
       <Select
         v-model="categoryFilter"
         :options="categories"
@@ -216,11 +286,16 @@ function formatDate(dateStr) {
         </InputIcon>
         <InputText v-model="searchQuery" placeholder="Search events..." class="w-full" />
       </IconField>
+      <SelectButton v-model="activeView" :options="viewOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
     </div>
 
     <p v-if="!filteredEvents.length" class="text-center text-gray-500">
       No events match your filters.
     </p>
+
+    <div v-else-if="activeView === 'calendar'" class="card">
+      <FullCalendar :options="calendarOptions" />
+    </div>
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card v-for="event in filteredEvents" :key="event.id" class="shadow-sm h-full flex flex-col">
@@ -240,13 +315,62 @@ function formatDate(dateStr) {
           <p class="text-surface-600 text-sm leading-relaxed flex-1">{{ event.description }}</p>
         </template>
         <template #footer>
-          <div class="flex items-center justify-between mt-auto">
-            <span class="text-sm text-surface-400">{{ event.spots }} spots left</span>
-            <Button label="Register" size="small" />
+          <div class="flex items-center justify-between mt-auto gap-2">
+            <span class="text-sm text-surface-400">
+              {{ isFull(event) ? 'Fully booked' : `${remaining(event)} spots left` }}
+            </span>
+            <Button
+              v-if="isBooked(event)"
+              label="Cancel booking"
+              size="small"
+              severity="secondary"
+              outlined
+              :loading="bookingBusyId === event.id"
+              @click="cancel(event)"
+            />
+            <Button
+              v-else
+              label="Register"
+              size="small"
+              :disabled="isFull(event)"
+              :loading="bookingBusyId === event.id"
+              @click="register(event)"
+            />
           </div>
         </template>
       </Card>
     </div>
+
+    <Dialog v-model:visible="showDetails" :header="detailsEvent?.title" modal :style="{ width: '28rem' }">
+      <template v-if="detailsEvent">
+        <div class="flex flex-col gap-2 mb-4">
+          <Tag :value="detailsEvent.category" :severity="categorySeverity[detailsEvent.category]" class="w-fit" />
+          <span class="text-sm text-surface-500">{{ formatDate(detailsEvent.date) }}</span>
+          <span class="text-sm text-surface-500">{{ detailsEvent.location }}</span>
+          <p class="text-sm text-surface-600 leading-relaxed mt-2">{{ detailsEvent.description }}</p>
+          <span class="text-sm text-surface-400 mt-2">
+            {{ isFull(detailsEvent) ? 'Fully booked' : `${remaining(detailsEvent)} spots left` }}
+          </span>
+        </div>
+      </template>
+      <template #footer>
+        <Button label="Close" severity="secondary" text @click="showDetails = false" />
+        <Button
+          v-if="detailsEvent && isBooked(detailsEvent)"
+          label="Cancel booking"
+          severity="secondary"
+          :loading="bookingBusyId === detailsEvent.id"
+          @click="cancel(detailsEvent)"
+        />
+        <Button
+          v-else-if="detailsEvent"
+          label="Register"
+          :disabled="isFull(detailsEvent)"
+          :loading="bookingBusyId === detailsEvent.id"
+          @click="register(detailsEvent)"
+        />
+      </template>
+    </Dialog>
 
     <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
       <div class="flex flex-col gap-4 mt-4">
@@ -277,8 +401,8 @@ function formatDate(dateStr) {
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Available Spots</label>
-          <InputText v-model.number="newEvent.spots" type="number" min="1" max="100000" />
-          <small v-if="errors.spots" class="text-red-500">{{ errors.spots }}</small>
+          <InputText v-model.number="newEvent.capacity" type="number" min="1" max="100000" />
+          <small v-if="errors.capacity" class="text-red-500">{{ errors.capacity }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Category</label>
@@ -289,10 +413,11 @@ function formatDate(dateStr) {
           />
           <small v-if="errors.category" class="text-red-500">{{ errors.category }}</small>
         </div>
+        <Message v-if="errors.submit" severity="error" :closable="false">{{ errors.submit }}</Message>
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" text @click="showDialog = false" />
-        <Button label="Add Event" @click="addEvent" />
+        <Button label="Add Event" :loading="creating" @click="addEvent" />
       </template>
     </Dialog>
   </div>

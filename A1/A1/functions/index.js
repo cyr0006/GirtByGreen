@@ -334,3 +334,130 @@ exports.getProjectStats = onCall(async (request) => {
     byMonth: byMonthSorted,
   }
 })
+
+// Admin-only aggregate counts for the admin dashboard (number of users and
+// their account types, plus total garden projects). Checks the caller's own
+// user doc via the Admin SDK rather than trusting a client-supplied role, and
+// never returns individual user records (names/emails) - counts only.
+exports.getAdminDashboardStats = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to view the admin dashboard.')
+  }
+
+  const db = admin.firestore()
+  const callerSnap = await db.collection('users').doc(request.auth.uid).get()
+  if (!callerSnap.exists || callerSnap.data().role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Admin access is required for this dashboard.')
+  }
+
+  const [usersSnap, projectsSnap] = await Promise.all([
+    db.collection('users').get(),
+    db.collection('projects').get(),
+  ])
+
+  const usersByRole = new Map()
+  usersSnap.forEach((doc) => {
+    const role = doc.data().role || 'unspecified'
+    usersByRole.set(role, (usersByRole.get(role) || 0) + 1)
+  })
+
+  return {
+    totalUsers: usersSnap.size,
+    usersByRole: Array.from(usersByRole, ([label, count]) => ({ label, count })).sort(
+      (a, b) => b.count - a.count,
+    ),
+    totalGardenProjects: projectsSnap.size,
+  }
+})
+
+// Registers the caller for an event, inside one Firestore transaction so a
+// capacity check-and-increment can never race two users into the last spot,
+// and rejects if they already have another event booked the same day (the
+// "booking conflict management" the calendar view needs). Mirrors the
+// booking into users/{uid}/myBookings so that same-day check is a single
+// doc read next time rather than a scan over every event's bookings.
+exports.bookEvent = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to register for an event.')
+  }
+
+  const { eventId } = request.data || {}
+  if (typeof eventId !== 'string' || !eventId.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid eventId is required.')
+  }
+
+  const db = admin.firestore()
+  const uid = request.auth.uid
+  const eventRef = db.collection('events').doc(eventId)
+  const bookingRef = eventRef.collection('bookings').doc(uid)
+  const myBookingsRef = db.collection('users').doc(uid).collection('myBookings')
+
+  await db.runTransaction(async (tx) => {
+    const eventSnap = await tx.get(eventRef)
+    if (!eventSnap.exists) {
+      throw new HttpsError('not-found', 'This event no longer exists.')
+    }
+    const event = eventSnap.data()
+
+    const bookingSnap = await tx.get(bookingRef)
+    if (bookingSnap.exists) {
+      throw new HttpsError('already-exists', "You're already registered for this event.")
+    }
+
+    if ((event.bookedCount || 0) >= event.capacity) {
+      throw new HttpsError('resource-exhausted', 'This event is fully booked.')
+    }
+
+    // Conflict check: does this user already have a different event booked
+    // on the same date?
+    const sameDaySnap = await tx.get(myBookingsRef.where('date', '==', event.date))
+    const conflict = sameDaySnap.docs.find((d) => d.id !== eventId)
+    if (conflict) {
+      throw new HttpsError(
+        'failed-precondition',
+        `You already have "${conflict.data().title}" booked on ${event.date}.`,
+      )
+    }
+
+    tx.update(eventRef, { bookedCount: admin.firestore.FieldValue.increment(1) })
+    tx.set(bookingRef, { bookedAt: admin.firestore.FieldValue.serverTimestamp() })
+    tx.set(myBookingsRef.doc(eventId), {
+      title: event.title,
+      date: event.date,
+      location: event.location,
+      bookedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+  })
+
+  return { success: true }
+})
+
+// Cancels the caller's own registration, releasing the spot for someone else.
+exports.cancelBooking = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to cancel a booking.')
+  }
+
+  const { eventId } = request.data || {}
+  if (typeof eventId !== 'string' || !eventId.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid eventId is required.')
+  }
+
+  const db = admin.firestore()
+  const uid = request.auth.uid
+  const eventRef = db.collection('events').doc(eventId)
+  const bookingRef = eventRef.collection('bookings').doc(uid)
+  const myBookingRef = db.collection('users').doc(uid).collection('myBookings').doc(eventId)
+
+  await db.runTransaction(async (tx) => {
+    const bookingSnap = await tx.get(bookingRef)
+    if (!bookingSnap.exists) {
+      throw new HttpsError('not-found', "You don't have a booking for this event.")
+    }
+    tx.update(eventRef, { bookedCount: admin.firestore.FieldValue.increment(-1) })
+    tx.delete(bookingRef)
+    tx.delete(myBookingRef)
+  })
+
+  return { success: true }
+})

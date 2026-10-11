@@ -2,9 +2,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read: if request.auth != null;
+      // Self can always read their own doc; anyone else needs the admin role.
+      // (The admin dashboard's counts are fetched server-side via the Admin
+      // SDK anyway - this just stops other signed-in users from enumerating
+      // the user base client-side.)
+      allow read: if request.auth != null
+                 && (request.auth.uid == userId
+                     || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
       allow create, update: if request.auth != null
                             && request.auth.uid == userId;
+
+      match /myBookings/{eventId} {
+        // Mirror of this user's event bookings, kept in sync by the
+        // bookEvent/cancelBooking functions - lets a conflict check ("do I
+        // already have something booked this day?") be a single query
+        // instead of a collection-group scan over every event's bookings.
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;  // Admin SDK only (bookEvent / cancelBooking)
+      }
+    }
+    match /events/{eventId} {
+      allow read: if true;  // public event listing, signed in or not
+      allow create: if request.auth != null
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'org'
+                   && request.resource.data.bookedCount == 0;
+      allow update, delete: if false;  // bookedCount only ever changes via bookEvent/cancelBooking
+
+      match /bookings/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;  // Admin SDK only — prevents double-booking/forged capacity
+      }
     }
     match /projects/{projectId} {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;

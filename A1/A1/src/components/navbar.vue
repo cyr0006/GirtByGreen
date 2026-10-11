@@ -68,11 +68,12 @@ import SignOutIcon from '@primeicons/vue/sign-out'
 import Sparkles from '@primeicons/vue/sparkles'
 import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 import ChartBar from '@primeicons/vue/chart-bar'
+import Shield from '@primeicons/vue/shield'
 
 const router = useRouter()
 const confirm = useConfirm()
 const auth = getAuth()
-const { user } = useAuth()
+const { user, isAdmin } = useAuth()
 
 const profileMenu = ref(null)
 
@@ -167,8 +168,20 @@ const items = computed(() =>
           icon: Sparkles,
           command: () => router.push('/my-garden-projects'),
         },
+        {
+          label: 'Community Impact',
+          icon: ChartBar,
+          command: () => router.push('/community-impact'),
+        },
       ],
     },
+    isAdmin.value
+      ? {
+          label: 'Admin Dashboard',
+          icon: Shield,
+          command: () => router.push('/admin-dashboard'),
+        }
+      : null,
   ].filter(Boolean),
 )
 </script>
