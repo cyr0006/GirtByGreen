@@ -67,6 +67,7 @@ import SignInIcon from '@primeicons/vue/sign-in'
 import SignOutIcon from '@primeicons/vue/sign-out'
 import Sparkles from '@primeicons/vue/sparkles'
 import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
+import ChartBar from '@primeicons/vue/chart-bar'
 
 const router = useRouter()
 const confirm = useConfirm()

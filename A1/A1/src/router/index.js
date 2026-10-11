@@ -10,6 +10,7 @@ import VegetationMap from '../views/VegetationMap.vue'
 import SuburbCanopyData from '../views/SuburbCanopyData.vue'
 import GardenProjects from '../views/GardenProjects.vue'
 import GardenProjectChat from '../views/GardenProjectChat.vue'
+import CommunityImpact from '../views/CommunityImpact.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -62,6 +63,11 @@ const routes = [
     name: 'GardenProjectChat',
     component: GardenProjectChat,
   },
+  {
+    path: '/community-impact',
+    name: 'CommunityImpact',
+    component: CommunityImpact,
+  },
 ]
 
 const router = createRouter({
@@ -70,7 +76,7 @@ const router = createRouter({
 })
 
 const guestOnlyRoutes = ['SignIn', 'FireRegister']
-const authOnlyRoutes = ['Profile', 'GardenProjects', 'GardenProjectChat']
+const authOnlyRoutes = ['Profile', 'GardenProjects', 'GardenProjectChat', 'CommunityImpact']
 
 async function waitForAuthReady() {
   const { ready } = useAuth()
