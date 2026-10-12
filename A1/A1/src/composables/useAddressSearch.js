@@ -18,20 +18,30 @@ async function fetchJson(url, params, { timeoutMs } = {}) {
   }
 }
 
-// Query Vicmap's structured fields (house_number_1 / road_name / locality_name)
-// with prefix matches rather than a substring search on the combined address
-// string. A leading-wildcard LIKE '%...%' on `ezi_address` (a multi-million-row
-// statewide table) measured 10s+ or outright hung on this service once two or
-// more words were involved; prefix matches ('WORD%') on the structured fields
-// come back in well under a second, AND'd together or not.
-function buildAddressWhereClause(query) {
-  const words = query
+// Vicmap's hosted FeatureServer hangs for 8s+ (no error, just dead air)
+// whenever a query ANDs two LIKE predicates together, e.g.
+// `road_name LIKE 'MAIN%' AND locality_name LIKE 'MELB%'` - confirmed by
+// timing dozens of query shapes directly against the service. A single LIKE
+// predicate (optionally ANDed with an exact house_number_1 match) reliably
+// stays well under ~2s. So for a "<street> <suburb>" query we filter
+// server-side on the street only, pull a larger batch, and narrow to the
+// suburb client-side rather than asking the service to AND both.
+const STREET_BATCH_SIZE = '300'
+
+function parseWords(query) {
+  return query
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')
     .filter(Boolean)
+}
+
+// Returns { where, suburbWord } - suburbWord is set when the suburb filter
+// needs to be applied client-side (see fetch above) rather than in `where`.
+function buildAddressQuery(query) {
+  const words = parseWords(query)
   if (words.length === 0) return null
 
   let houseNumber = null
@@ -42,25 +52,20 @@ function buildAddressWhereClause(query) {
   }
   if (rest.length === 0) return null
 
-  const conditions = []
-  if (houseNumber) conditions.push(`house_number_1=${houseNumber}`)
+  const houseClause = houseNumber ? `house_number_1=${houseNumber} AND ` : ''
 
   if (rest.length === 1) {
-    // Could be a street name or a suburb - try both.
+    // Could be a street name or a suburb - try both. Only one LIKE clause
+    // either way (OR, not AND), so this stays fast.
     const word = rest[0]
-    conditions.push(`(road_name LIKE '${word}%' OR locality_name LIKE '${word}%')`)
-  } else {
-    // Natural typed order: "<number> <street words...> <suburb>" - take the
-    // first remaining word as the street name and the last as the suburb.
-    // (They can legitimately be the same word, e.g. "Emerald Lake Rd, Emerald" -
-    // road_name and locality_name are different fields, so no need to dedupe.)
-    const roadWord = rest[0]
-    const suburbWord = rest[rest.length - 1]
-    conditions.push(`road_name LIKE '${roadWord}%'`)
-    conditions.push(`locality_name LIKE '${suburbWord}%'`)
+    return { where: `${houseClause}(road_name LIKE '${word}%' OR locality_name LIKE '${word}%')` }
   }
 
-  return conditions.join(' AND ')
+  // Natural typed order: "<number> <street words...> <suburb>" - take the
+  // first remaining word as the street name and the last as the suburb.
+  const roadWord = rest[0]
+  const suburbWord = rest[rest.length - 1]
+  return { where: `${houseClause}road_name LIKE '${roadWord}%'`, suburbWord }
 }
 
 // Debounced Vicmap address autocomplete, shared by any view that needs to
@@ -76,11 +81,12 @@ export function useAddressSearch() {
       addressSuggestions.value = []
       return
     }
-    const where = buildAddressWhereClause(query)
-    if (!where) {
+    const built = buildAddressQuery(query)
+    if (!built) {
       addressSuggestions.value = []
       return
     }
+    const { where, suburbWord } = built
     try {
       const data = await fetchJson(
         ADDRESS_URL,
@@ -89,12 +95,15 @@ export function useAddressSearch() {
           outFields: 'ezi_address,locality_name',
           outSR: '4326',
           f: 'geojson',
-          resultRecordCount: '8',
-          orderByFields: 'ezi_address',
+          resultRecordCount: suburbWord ? STREET_BATCH_SIZE : '8',
         },
         { timeoutMs: 8000 },
       )
-      addressSuggestions.value = (data.features || []).map((feature) => ({
+      let features = data.features || []
+      if (suburbWord) {
+        features = features.filter((f) => f.properties.locality_name?.startsWith(suburbWord))
+      }
+      addressSuggestions.value = features.slice(0, 8).map((feature) => ({
         label: feature.properties.ezi_address,
         lat: feature.geometry.coordinates[1],
         lng: feature.geometry.coordinates[0],
