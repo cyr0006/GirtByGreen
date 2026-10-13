@@ -356,10 +356,14 @@ exports.sendProjectChatMessage = onCall({ secrets: [GROQ_API_KEY] }, async (requ
   }
 })
 
-// Aggregated, de-identified stats for the community impact charts. Runs on the
-// Admin SDK (bypasses Firestore rules, which otherwise scope /projects reads to
-// each doc's owner) and only ever returns counts grouped by locality/goal/month -
-// never addresses, coordinates or ownerId - so no individual project is exposed.
+// De-identified rows for the community impact charts - one {locality, goal,
+// month} triple per project, never an address, coordinates, or ownerId, so
+// no individual project is identifiable. Row-level (rather than pre-grouped
+// by dimension) on purpose: the client cross-filters by more than one
+// dimension at once (e.g. "goal counts for just this suburb and date
+// range"), which a single server-side grouping can't support. Runs on the
+// Admin SDK since Firestore rules otherwise scope /projects reads to each
+// doc's owner.
 exports.getProjectStats = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to view community stats.')
@@ -368,39 +372,19 @@ exports.getProjectStats = onCall(async (request) => {
   const db = admin.firestore()
   const snapshot = await db.collection('projects').get()
 
-  const byLocality = new Map()
-  const byGoal = new Map()
-  const byMonth = new Map()
-
-  snapshot.forEach((doc) => {
+  const rows = snapshot.docs.map((doc) => {
     const data = doc.data()
-
-    const locality = data.locality || 'Unknown suburb'
-    byLocality.set(locality, (byLocality.get(locality) || 0) + 1)
-
-    const goal = data.goal || 'Unspecified'
-    byGoal.set(goal, (byGoal.get(goal) || 0) + 1)
-
     const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : null
-    if (createdAt) {
-      const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
-      byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + 1)
+    return {
+      locality: data.locality || 'Unknown suburb',
+      goal: data.goal || 'Unspecified',
+      month: createdAt
+        ? `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
+        : null,
     }
   })
 
-  const toSortedByCount = (map) =>
-    Array.from(map, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)
-
-  const byMonthSorted = Array.from(byMonth, ([label, count]) => ({ label, count })).sort((a, b) =>
-    a.label.localeCompare(b.label),
-  )
-
-  return {
-    total: snapshot.size,
-    byLocality: toSortedByCount(byLocality).slice(0, 12),
-    byGoal: toSortedByCount(byGoal),
-    byMonth: byMonthSorted,
-  }
+  return { total: rows.length, rows }
 })
 
 // Shared by every admin-only endpoint below - checks the caller's own user

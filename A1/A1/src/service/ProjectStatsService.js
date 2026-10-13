@@ -12,9 +12,9 @@ function withTimeout(promise, ms) {
 
 export const ProjectStatsService = {
   /**
-   * Aggregated, de-identified counts of garden projects grouped by suburb,
-   * goal, and signup month. Never includes addresses, coordinates or owners.
-   * @returns {Promise<{ total: number, byLocality: Array<{label:string,count:number}>, byGoal: Array<{label:string,count:number}>, byMonth: Array<{label:string,count:number}> }>}
+   * De-identified rows of garden projects (suburb, goal, signup month - never
+   * an address, coordinates, or owner), for client-side cross-filtering.
+   * @returns {Promise<{ total: number, rows: Array<{ locality: string, goal: string, month: string | null }> }>}
    */
   async getProjectStats() {
     const result = await withTimeout(getProjectStatsCallable(), 10000)
