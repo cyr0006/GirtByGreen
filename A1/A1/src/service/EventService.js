@@ -16,6 +16,7 @@ const auth = getAuth()
 
 const bookEventCallable = httpsCallable(functions, 'bookEvent')
 const cancelBookingCallable = httpsCallable(functions, 'cancelBooking')
+const deleteEventCallable = httpsCallable(functions, 'deleteEvent')
 
 export const EventService = {
   async createEvent({ title, date, location, description, capacity, category }) {
@@ -58,6 +59,13 @@ export const EventService = {
 
   async cancelBooking(eventId) {
     const result = await cancelBookingCallable({ eventId })
+    return result.data
+  },
+
+  // Admin-only (enforced server-side) - removes the event along with every
+  // booking mirror pointing at it.
+  async deleteEvent(eventId) {
+    const result = await deleteEventCallable({ eventId })
     return result.data
   },
 }

@@ -80,12 +80,23 @@
             <small v-if="touched.role && errors.role" class="text-red-500">{{ errors.role }}</small>
           </div>
           <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
-          <Button type="submit" class="w-full" :loading="submitting">Register</Button>
+          <Message v-if="registrationPending" severity="info" :closable="false">
+            Thanks for registering! Organisation accounts need admin approval before you can sign
+            in - we'll let you know once that's done.
+          </Message>
+          <Button
+            v-if="!registrationPending"
+            type="submit"
+            class="w-full"
+            :loading="submitting"
+            >Register</Button
+          >
         </form>
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
           <Button
+            v-if="!registrationPending"
             type="button"
             severity="secondary"
             variant="outlined"
@@ -112,11 +123,12 @@ import Button from 'primevue/button'
 import Label from 'primevue/label'
 import SelectButton from 'primevue/selectbutton'
 import Message from 'primevue/message'
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth'
 import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 import { EMAIL_REGEX, trimmed, containsHtml } from '../utils/validation'
 import { useGoogleAuth } from '../composables/useGoogleAuth'
+import { rejectIfPendingOrg, PENDING_ORG_MESSAGE } from '../composables/useAccountGate'
 
 const name = ref('')
 const email = ref('')
@@ -135,6 +147,7 @@ const { signInWithGoogle, saveGoogleUserRole, googleAuthErrorMessage } = useGoog
 const submitting = ref(false)
 const submitError = ref('')
 const googleSubmitting = ref(false)
+const registrationPending = ref(false)
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -159,9 +172,11 @@ function authErrorMessage(code) {
 async function register() {
   submitting.value = true
   submitError.value = ''
+  registrationPending.value = false
 
   const cleanName = trimmed(name.value)
   const cleanEmail = trimmed(email.value)
+  const isOrg = role.value === 'org'
 
   try {
     const { user } = await createUserWithEmailAndPassword(auth, cleanEmail, password.value)
@@ -173,6 +188,7 @@ async function register() {
           name: cleanName,
           email: cleanEmail,
           role: role.value,
+          ...(isOrg ? { status: 'pending' } : {}),
         }),
         5000,
       )
@@ -181,7 +197,15 @@ async function register() {
     }
 
     console.log('User registered:', user.uid)
-    router.push('/')
+
+    if (isOrg) {
+      // createUserWithEmailAndPassword already signs them in - undo that
+      // until an admin approves the account.
+      await signOut(auth)
+      registrationPending.value = true
+    } else {
+      router.push('/')
+    }
   } catch (error) {
     console.error('Error registering user:', error.code, error.message)
     submitError.value = authErrorMessage(error.code)
@@ -250,13 +274,30 @@ async function handleGoogleRegister() {
 
   googleSubmitting.value = true
   submitError.value = ''
+  registrationPending.value = false
 
   try {
     const { user, isNewUser } = await signInWithGoogle()
+
     if (isNewUser) {
-      await saveGoogleUserRole(user, role.value)
+      const isOrg = role.value === 'org'
+      await saveGoogleUserRole(user, role.value, { pending: isOrg })
+      console.log('User registered with Google:', user.uid)
+      if (isOrg) {
+        await signOut(auth)
+        registrationPending.value = true
+      } else {
+        router.push('/')
+      }
+      return
     }
-    console.log('User registered with Google:', user.uid)
+
+    // Already has an account - this is really just a sign-in, so it gets
+    // the same pending-approval gate as the login form.
+    if (await rejectIfPendingOrg(user)) {
+      submitError.value = PENDING_ORG_MESSAGE
+      return
+    }
     router.push('/')
   } catch (error) {
     console.error('Google sign-up failed:', error.code, error.message)

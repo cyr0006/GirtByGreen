@@ -1,7 +1,12 @@
 import { httpsCallable } from 'firebase/functions'
+import { getFirestore, collection, onSnapshot } from 'firebase/firestore'
 import { functions } from '@/firebase'
 
+const db = getFirestore()
+
 const getAdminDashboardStatsCallable = httpsCallable(functions, 'getAdminDashboardStats')
+const approveOrganisationCallable = httpsCallable(functions, 'approveOrganisation')
+const deleteUserAccountCallable = httpsCallable(functions, 'deleteUserAccount')
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -19,6 +24,29 @@ export const AdminService = {
    */
   async getAdminDashboardStats() {
     const result = await withTimeout(getAdminDashboardStatsCallable(), 10000)
+    return result.data
+  },
+
+  // Firestore rules let an admin read every users/{uid} doc (not just their
+  // own), so this lists accounts directly via the client SDK rather than
+  // another Admin SDK endpoint - real-time, same as the events listing.
+  listenToUsers(callback, onError) {
+    return onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
+        callback(snapshot.docs.map((d) => ({ uid: d.id, ...d.data() })))
+      },
+      onError,
+    )
+  },
+
+  async approveOrganisation(uid) {
+    const result = await withTimeout(approveOrganisationCallable({ uid }), 10000)
+    return result.data
+  },
+
+  async deleteUserAccount(uid) {
+    const result = await withTimeout(deleteUserAccountCallable({ uid }), 15000)
     return result.data
   },
 }

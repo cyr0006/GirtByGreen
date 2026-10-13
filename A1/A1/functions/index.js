@@ -403,20 +403,25 @@ exports.getProjectStats = onCall(async (request) => {
   }
 })
 
+// Shared by every admin-only endpoint below - checks the caller's own user
+// doc via the Admin SDK rather than trusting a client-supplied role.
+async function requireAdmin(db, uid) {
+  const callerSnap = await db.collection('users').doc(uid).get()
+  if (!callerSnap.exists || callerSnap.data().role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Admin access is required for this action.')
+  }
+}
+
 // Admin-only aggregate counts for the admin dashboard (number of users and
-// their account types, plus total garden projects). Checks the caller's own
-// user doc via the Admin SDK rather than trusting a client-supplied role, and
-// never returns individual user records (names/emails) - counts only.
+// their account types, plus total garden projects). Never returns individual
+// user records (names/emails) - counts only.
 exports.getAdminDashboardStats = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to view the admin dashboard.')
   }
 
   const db = admin.firestore()
-  const callerSnap = await db.collection('users').doc(request.auth.uid).get()
-  if (!callerSnap.exists || callerSnap.data().role !== 'admin') {
-    throw new HttpsError('permission-denied', 'Admin access is required for this dashboard.')
-  }
+  await requireAdmin(db, request.auth.uid)
 
   const [usersSnap, projectsSnap] = await Promise.all([
     db.collection('users').get(),
@@ -566,6 +571,131 @@ exports.cancelBooking = onCall({ secrets: [SENDGRID_API_KEY] }, async (request) 
       console.error('Failed to send cancellation confirmation email', err?.response?.body || err)
     }
   }
+
+  return { success: true }
+})
+
+// Approves a pending organisation account, letting it sign in. Only
+// organisation accounts have a 'pending' status to clear - anything else is
+// a no-op from the caller's point of view, so it's rejected rather than
+// silently accepted.
+exports.approveOrganisation = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to approve accounts.')
+  }
+
+  const db = admin.firestore()
+  await requireAdmin(db, request.auth.uid)
+
+  const { uid } = request.data || {}
+  if (typeof uid !== 'string' || !uid.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid uid is required.')
+  }
+
+  const ref = db.collection('users').doc(uid)
+  const snap = await ref.get()
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'Account not found.')
+  }
+  if (snap.data().role !== 'org') {
+    throw new HttpsError('failed-precondition', 'Only organisation accounts need approval.')
+  }
+
+  await ref.update({ status: 'approved' })
+  return { success: true }
+})
+
+// Deletes a user's account entirely - their Firestore profile, their event
+// bookings (releasing the spots so capacity counts stay accurate), and their
+// Firebase Auth sign-in. Admin-only, and an admin can't delete themselves
+// (would otherwise be able to lock every admin out of this dashboard).
+exports.deleteUserAccount = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to delete an account.')
+  }
+
+  const db = admin.firestore()
+  await requireAdmin(db, request.auth.uid)
+
+  const { uid } = request.data || {}
+  if (typeof uid !== 'string' || !uid.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid uid is required.')
+  }
+  if (uid === request.auth.uid) {
+    throw new HttpsError('failed-precondition', "You can't delete your own admin account.")
+  }
+
+  const userRef = db.collection('users').doc(uid)
+
+  // Best-effort: release this user's event bookings first. A failure here
+  // doesn't block deleting the account itself.
+  try {
+    const myBookingsSnap = await userRef.collection('myBookings').get()
+    await Promise.all(
+      myBookingsSnap.docs.map(async (bookingDoc) => {
+        const eventId = bookingDoc.id
+        const eventRef = db.collection('events').doc(eventId)
+        await db.runTransaction(async (tx) => {
+          const eventSnap = await tx.get(eventRef)
+          if (eventSnap.exists) {
+            tx.update(eventRef, { bookedCount: admin.firestore.FieldValue.increment(-1) })
+          }
+          tx.delete(eventRef.collection('bookings').doc(uid))
+          tx.delete(bookingDoc.ref)
+        })
+      }),
+    )
+  } catch (err) {
+    console.error('Failed to release bookings while deleting account', err)
+  }
+
+  await userRef.delete()
+
+  try {
+    await admin.auth().deleteUser(uid)
+  } catch (err) {
+    if (err.code !== 'auth/user-not-found') {
+      console.error('Failed to delete auth user', err)
+      throw new HttpsError(
+        'internal',
+        'Account data was removed, but deleting the sign-in failed. Please try again.',
+      )
+    }
+  }
+
+  return { success: true }
+})
+
+// Deletes an event along with every booking mirror that points at it (the
+// events/{id}/bookings docs and each booked user's users/{uid}/myBookings
+// entry), so no stale references are left behind. Admin-only.
+exports.deleteEvent = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to delete an event.')
+  }
+
+  const db = admin.firestore()
+  await requireAdmin(db, request.auth.uid)
+
+  const { eventId } = request.data || {}
+  if (typeof eventId !== 'string' || !eventId.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid eventId is required.')
+  }
+
+  const eventRef = db.collection('events').doc(eventId)
+  const eventSnap = await eventRef.get()
+  if (!eventSnap.exists) {
+    throw new HttpsError('not-found', 'This event no longer exists.')
+  }
+
+  const bookingsSnap = await eventRef.collection('bookings').get()
+  const batch = db.batch()
+  bookingsSnap.docs.forEach((bookingDoc) => {
+    batch.delete(bookingDoc.ref)
+    batch.delete(db.collection('users').doc(bookingDoc.id).collection('myBookings').doc(eventId))
+  })
+  batch.delete(eventRef)
+  await batch.commit()
 
   return { success: true }
 })

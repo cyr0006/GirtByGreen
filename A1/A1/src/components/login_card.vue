@@ -80,6 +80,7 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 import { EMAIL_REGEX, trimmed } from '../utils/validation'
 import { useGoogleAuth } from '../composables/useGoogleAuth'
+import { rejectIfPendingOrg, PENDING_ORG_MESSAGE } from '../composables/useAccountGate'
 
 const email = ref('')
 const password = ref('')
@@ -112,6 +113,10 @@ async function signin() {
 
   try {
     const { user } = await signInWithEmailAndPassword(auth, trimmed(email.value), password.value)
+    if (await rejectIfPendingOrg(user)) {
+      submitError.value = PENDING_ORG_MESSAGE
+      return
+    }
     console.log('User signed in:', user.uid)
     router.push('/')
   } catch (error) {
@@ -133,6 +138,13 @@ async function handleGoogleSignIn() {
       // Google sign-in here reads as "I don't have an account yet, let me
       // in" rather than deliberately registering as an organisation).
       await saveGoogleUserRole(user, 'user')
+      console.log('User signed in with Google:', user.uid)
+      router.push('/')
+      return
+    }
+    if (await rejectIfPendingOrg(user)) {
+      submitError.value = PENDING_ORG_MESSAGE
+      return
     }
     console.log('User signed in with Google:', user.uid)
     router.push('/')

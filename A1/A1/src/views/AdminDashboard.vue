@@ -1,10 +1,18 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Card from 'primevue/card'
 import Chart from 'primevue/chart'
 import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import { useConfirm } from 'primevue/useconfirm'
+import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 import { AdminService } from '@/service/AdminService'
+import { useAuth } from '@/composables/useAuth'
+
+const confirm = useConfirm()
+const { user } = useAuth()
 
 const loading = ref(true)
 const loadError = ref('')
@@ -26,11 +34,21 @@ const ROLE_LABELS = {
   unspecified: 'Unspecified',
 }
 
+const ROLE_SEVERITY = {
+  user: 'info',
+  org: 'success',
+  admin: 'warn',
+  unspecified: 'secondary',
+}
+
 function roleLabel(role) {
   return ROLE_LABELS[role] || role
 }
 function roleColor(role) {
   return ROLE_COLORS[role] || ROLE_COLORS.unspecified
+}
+function roleSeverity(role) {
+  return ROLE_SEVERITY[role] || ROLE_SEVERITY.unspecified
 }
 
 const chartData = computed(() => ({
@@ -58,6 +76,13 @@ const chartOptions = {
   },
 }
 
+const accounts = ref([])
+const accountsError = ref('')
+const actionBusyUid = ref('')
+let unsubUsers = null
+
+const currentUid = computed(() => user.value?.uid || '')
+
 onMounted(() => {
   AdminService.getAdminDashboardStats()
     .then((data) => {
@@ -71,7 +96,55 @@ onMounted(() => {
           : 'Could not load dashboard stats right now. Please try again later.'
       loading.value = false
     })
+
+  unsubUsers = AdminService.listenToUsers(
+    (rows) => {
+      accounts.value = rows
+    },
+    () => {
+      accountsError.value = "You don't have admin access, so accounts aren't available."
+    },
+  )
 })
+
+onUnmounted(() => {
+  unsubUsers?.()
+})
+
+async function approve(account) {
+  accountsError.value = ''
+  actionBusyUid.value = account.uid
+  try {
+    await AdminService.approveOrganisation(account.uid)
+  } catch (err) {
+    accountsError.value = err?.message || 'Could not approve this account. Please try again.'
+  } finally {
+    actionBusyUid.value = ''
+  }
+}
+
+async function deleteAccount(account) {
+  accountsError.value = ''
+  actionBusyUid.value = account.uid
+  try {
+    await AdminService.deleteUserAccount(account.uid)
+  } catch (err) {
+    accountsError.value = err?.message || 'Could not delete this account. Please try again.'
+  } finally {
+    actionBusyUid.value = ''
+  }
+}
+
+function confirmDeleteAccount(account) {
+  confirm.require({
+    header: 'Delete account',
+    message: `Delete ${account.name || account.email || 'this account'}? This cannot be undone.`,
+    icon: ExclamationTriangle,
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: 'Cancel', severity: 'secondary' },
+    accept: () => deleteAccount(account),
+  })
+}
 </script>
 
 <template>
@@ -131,6 +204,66 @@ onMounted(() => {
             </table>
           </details>
         </template>
+      </div>
+
+      <div class="card mt-6">
+        <h2 class="text-xl font-semibold mb-4">Manage accounts</h2>
+        <Message v-if="accountsError" severity="error" class="mb-4">{{ accountsError }}</Message>
+        <div v-if="!accounts.length" class="text-gray-500 py-8 text-center">No accounts found.</div>
+        <div v-else class="overflow-x-auto">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="account in accounts" :key="account.uid">
+                <td>{{ account.name || '—' }}</td>
+                <td>{{ account.email || '—' }}</td>
+                <td>
+                  <Tag
+                    :value="roleLabel(account.role || 'unspecified')"
+                    :severity="roleSeverity(account.role || 'unspecified')"
+                  />
+                </td>
+                <td>
+                  <Tag
+                    v-if="account.role === 'org'"
+                    :value="account.status === 'pending' ? 'Pending approval' : 'Approved'"
+                    :severity="account.status === 'pending' ? 'warn' : 'success'"
+                  />
+                  <span v-else class="text-gray-400">—</span>
+                </td>
+                <td>
+                  <div class="flex gap-2 justify-end">
+                    <Button
+                      v-if="account.role === 'org' && account.status === 'pending'"
+                      label="Approve"
+                      size="small"
+                      severity="success"
+                      :loading="actionBusyUid === account.uid"
+                      @click="approve(account)"
+                    />
+                    <Button
+                      v-if="account.uid !== currentUid"
+                      label="Delete"
+                      size="small"
+                      severity="danger"
+                      outlined
+                      :loading="actionBusyUid === account.uid"
+                      @click="confirmDeleteAccount(account)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </template>
   </div>

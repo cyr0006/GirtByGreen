@@ -1,6 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // An org account only creates events once admin-approved - 'pending' is
+    // the one status value that blocks it; anything else (including no
+    // status field at all, e.g. accounts created before this gate existed)
+    // counts as approved.
+    function isApprovedOrg(uid) {
+      let callerDoc = get(/databases/$(database)/documents/users/$(uid)).data;
+      return callerDoc.role == 'org' && callerDoc.status != 'pending';
+    }
+
     match /users/{userId} {
       // Self can always read their own doc; anyone else needs the admin role.
       // (The admin dashboard's counts are fetched server-side via the Admin
@@ -24,9 +33,12 @@ service cloud.firestore {
     match /events/{eventId} {
       allow read: if true;  // public event listing, signed in or not
       allow create: if request.auth != null
-                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'org'
+                   && isApprovedOrg(request.auth.uid)
                    && request.resource.data.bookedCount == 0;
-      allow update, delete: if false;  // bookedCount only ever changes via bookEvent/cancelBooking
+      // bookedCount only ever changes via bookEvent/cancelBooking; deletion
+      // is admin-only via the deleteEvent function - both use the Admin SDK,
+      // which bypasses these rules, so client writes stay blocked entirely.
+      allow update, delete: if false;
 
       match /bookings/{userId} {
         allow read: if request.auth != null && request.auth.uid == userId;

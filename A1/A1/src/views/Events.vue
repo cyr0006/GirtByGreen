@@ -13,6 +13,8 @@ import Message from 'primevue/message'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import SearchIcon from '@primeicons/vue/search'
+import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
+import { useConfirm } from 'primevue/useconfirm'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -21,7 +23,8 @@ import { trimmed, containsHtml } from '../utils/validation'
 import { EventService } from '../service/EventService'
 
 const router = useRouter()
-const { user, isOrg } = useAuth()
+const confirm = useConfirm()
+const { user, isOrg, isAdmin } = useAuth()
 
 const events = ref([])
 const myBookingIds = ref(new Set())
@@ -156,6 +159,32 @@ async function cancel(event) {
   } finally {
     bookingBusyId.value = ''
   }
+}
+
+async function deleteEventNow(event) {
+  actionError.value = ''
+  bookingBusyId.value = event.id
+  try {
+    await EventService.deleteEvent(event.id)
+    if (showDetails.value && detailsEvent.value?.id === event.id) {
+      showDetails.value = false
+    }
+  } catch (err) {
+    actionError.value = err?.message || 'Could not delete this event. Please try again.'
+  } finally {
+    bookingBusyId.value = ''
+  }
+}
+
+function confirmDeleteEvent(event) {
+  confirm.require({
+    header: 'Delete event',
+    message: `Delete "${event.title}"? This cannot be undone.`,
+    icon: ExclamationTriangle,
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: 'Cancel', severity: 'secondary' },
+    accept: () => deleteEventNow(event),
+  })
 }
 
 const showDialog = ref(false)
@@ -319,23 +348,34 @@ function formatDate(dateStr) {
             <span class="text-sm text-surface-400">
               {{ isFull(event) ? 'Fully booked' : `${remaining(event)} spots left` }}
             </span>
-            <Button
-              v-if="isBooked(event)"
-              label="Cancel booking"
-              size="small"
-              severity="secondary"
-              outlined
-              :loading="bookingBusyId === event.id"
-              @click="cancel(event)"
-            />
-            <Button
-              v-else
-              label="Register"
-              size="small"
-              :disabled="isFull(event)"
-              :loading="bookingBusyId === event.id"
-              @click="register(event)"
-            />
+            <div class="flex items-center gap-2">
+              <Button
+                v-if="isAdmin"
+                label="Delete"
+                size="small"
+                severity="danger"
+                outlined
+                :loading="bookingBusyId === event.id"
+                @click="confirmDeleteEvent(event)"
+              />
+              <Button
+                v-if="isBooked(event)"
+                label="Cancel booking"
+                size="small"
+                severity="secondary"
+                outlined
+                :loading="bookingBusyId === event.id"
+                @click="cancel(event)"
+              />
+              <Button
+                v-else
+                label="Register"
+                size="small"
+                :disabled="isFull(event)"
+                :loading="bookingBusyId === event.id"
+                @click="register(event)"
+              />
+            </div>
           </div>
         </template>
       </Card>
@@ -355,6 +395,14 @@ function formatDate(dateStr) {
       </template>
       <template #footer>
         <Button label="Close" severity="secondary" text @click="showDetails = false" />
+        <Button
+          v-if="detailsEvent && isAdmin"
+          label="Delete"
+          severity="danger"
+          outlined
+          :loading="bookingBusyId === detailsEvent.id"
+          @click="confirmDeleteEvent(detailsEvent)"
+        />
         <Button
           v-if="detailsEvent && isBooked(detailsEvent)"
           label="Cancel booking"
