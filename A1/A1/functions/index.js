@@ -2,6 +2,7 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https')
 const { defineSecret } = require('firebase-functions/params')
 const sgMail = require('@sendgrid/mail')
 const admin = require('firebase-admin')
+const sanitizeHtml = require('sanitize-html')
 
 admin.initializeApp()
 
@@ -14,12 +15,40 @@ const FROM_EMAIL = 'acyrus0007@gmail.com'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const MAX_SUBJECT_LEN = 150
+const MAX_NAME_LEN = 100
+const MAX_DESCRIPTION_LEN = 20000
+
+// The editor only ever needs to produce body copy, so the allowlist below
+// is intentionally narrow (no images/scripts/iframes) - this is the one
+// place arbitrary user-authored HTML reaches a human (the recipient's
+// inbox), so it's sanitized server-side regardless of what the client sent.
+const DESCRIPTION_SANITIZE_OPTIONS = {
+  allowedTags: ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'blockquote', 'a', 'span'],
+  allowedAttributes: { a: ['href', 'target', 'rel'], span: ['style'] },
+  allowedStyles: { span: { color: [/^#[0-9a-fA-F]{3,6}$/, /^rgb\(\d+,\s*\d+,\s*\d+\)$/] } },
+  allowedSchemes: ['http', 'https', 'mailto'],
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function toPlainText(html) {
+  return sanitizeHtml(html, { allowedTags: [], allowedAttributes: [] }).trim()
+}
+
 exports.sendPlantsCsvEmail = onCall({ secrets: [SENDGRID_API_KEY] }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to email the plant list.')
   }
 
-  const { to, csv } = request.data || {}
+  const { to, csv, subject, name, description } = request.data || {}
 
   if (typeof to !== 'string' || !EMAIL_RE.test(to)) {
     throw new HttpsError('invalid-argument', 'A valid recipient email address is required.')
@@ -28,14 +57,40 @@ exports.sendPlantsCsvEmail = onCall({ secrets: [SENDGRID_API_KEY] }, async (requ
     throw new HttpsError('invalid-argument', 'CSV content is required.')
   }
 
+  const subjectText = typeof subject === 'string' ? subject.replace(/[\r\n]+/g, ' ').trim() : ''
+  if (!subjectText || subjectText.length > MAX_SUBJECT_LEN) {
+    throw new HttpsError(
+      'invalid-argument',
+      `A subject between 1 and ${MAX_SUBJECT_LEN} characters is required.`,
+    )
+  }
+
+  const nameText = typeof name === 'string' ? name.trim().slice(0, MAX_NAME_LEN) : ''
+
+  if (typeof description !== 'string' || description.length > MAX_DESCRIPTION_LEN) {
+    throw new HttpsError(
+      'invalid-argument',
+      `A message of ${MAX_DESCRIPTION_LEN} characters or fewer is required.`,
+    )
+  }
+  const safeDescription = sanitizeHtml(description, DESCRIPTION_SANITIZE_OPTIONS)
+  if (!toPlainText(safeDescription)) {
+    throw new HttpsError('invalid-argument', 'A message is required.')
+  }
+
+  const signOff = nameText ? `<p>Kind regards,<br>${escapeHtml(nameText)}</p>` : ''
+  const html = `${safeDescription}${signOff}`
+  const text = toPlainText(html)
+
   sgMail.setApiKey(SENDGRID_API_KEY.value())
 
   try {
     await sgMail.send({
       to,
       from: FROM_EMAIL,
-      subject: 'Your GirtByGreen plant list export',
-      text: 'Attached is the plant list you exported from GirtByGreen.',
+      subject: subjectText,
+      text,
+      html,
       attachments: [
         {
           content: Buffer.from(csv, 'utf-8').toString('base64'),

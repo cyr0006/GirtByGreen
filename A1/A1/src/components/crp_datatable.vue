@@ -258,7 +258,7 @@
       v-model:visible="exportDialogVisible"
       modal
       header="Export plant list"
-      :style="{ width: '28rem' }"
+      :style="{ width: exportMode === 'email' ? '36rem' : '28rem' }"
       class="mx-4"
     >
       <div class="flex flex-col gap-4">
@@ -282,15 +282,43 @@
           </small>
         </div>
 
-        <div v-if="exportMode === 'email'" class="flex flex-col gap-1">
-          <InputText
-            v-model="exportEmail"
-            type="email"
-            placeholder="recipient@example.com"
-            :invalid="!!exportError"
-          />
-          <small v-if="exportError" class="text-red-500">{{ exportError }}</small>
-        </div>
+        <template v-if="exportMode === 'email'">
+          <div class="flex flex-col gap-1">
+            <label for="exportEmailTo" class="text-sm font-medium">Recipient</label>
+            <InputText
+              id="exportEmailTo"
+              v-model="exportEmail"
+              type="email"
+              placeholder="recipient@example.com"
+              :invalid="!!exportError"
+            />
+            <small v-if="exportError" class="text-red-500">{{ exportError }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="exportSubject" class="text-sm font-medium">Subject</label>
+            <InputText
+              id="exportSubject"
+              v-model="exportSubject"
+              :invalid="!!exportSubjectError"
+              maxlength="150"
+            />
+            <small v-if="exportSubjectError" class="text-red-500">{{ exportSubjectError }}</small>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="exportName" class="text-sm font-medium">Your name (sign-off)</label>
+            <InputText id="exportName" v-model="exportName" maxlength="100" />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-medium">Message</label>
+            <Editor v-model="exportDescription" editorStyle="height: 180px" />
+            <small v-if="exportDescriptionError" class="text-red-500">{{
+              exportDescriptionError
+            }}</small>
+          </div>
+        </template>
 
         <Message v-if="exportSent" severity="success" class="text-sm">
           Email sent to {{ exportEmail }}.
@@ -332,6 +360,7 @@ import Rating from 'primevue/rating'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 import RadioButton from 'primevue/radiobutton'
+import Editor from 'primevue/editor'
 import Search from '@primeicons/vue/search'
 import FilterSlash from '@primeicons/vue/filter-slash'
 import FileExcel from '@primeicons/vue/file-excel'
@@ -359,8 +388,18 @@ const exportDialogVisible = ref(false)
 const exportMode = ref('download')
 const exportEmail = ref('')
 const exportError = ref('')
+const exportSubject = ref('')
+const exportSubjectError = ref('')
+const exportName = ref('')
+const exportDescription = ref('')
+const exportDescriptionError = ref('')
 const exportSending = ref(false)
 const exportSent = ref(false)
+
+const defaultExportDescription = () =>
+  '<p>Hi there,</p><p>Attached is the plant list you exported from GirtByGreen.</p>'
+
+const plainText = (html) => String(html || '').replace(/<[^>]*>/g, '').trim()
 
 const averageRating = (reviews) => {
   if (!reviews.length) return 0
@@ -444,6 +483,11 @@ const openExportDialog = () => {
   exportMode.value = 'download'
   exportEmail.value = ''
   exportError.value = ''
+  exportSubject.value = 'Your GirtByGreen plant list export'
+  exportSubjectError.value = ''
+  exportName.value = user.value?.displayName || user.value?.email || ''
+  exportDescription.value = defaultExportDescription()
+  exportDescriptionError.value = ''
   exportSent.value = false
   exportDialogVisible.value = true
 }
@@ -473,14 +517,36 @@ async function confirmExport() {
   }
 
   exportError.value = ''
-  if (!EMAIL_REGEX.test(trimmed(exportEmail.value) || '')) {
+  exportSubjectError.value = ''
+  exportDescriptionError.value = ''
+
+  const email = trimmed(exportEmail.value) || ''
+  const subject = trimmed(exportSubject.value) || ''
+
+  let valid = true
+  if (!EMAIL_REGEX.test(email)) {
     exportError.value = 'Please enter a valid email address.'
-    return
+    valid = false
   }
+  if (!subject) {
+    exportSubjectError.value = 'A subject is required.'
+    valid = false
+  }
+  if (!plainText(exportDescription.value)) {
+    exportDescriptionError.value = 'A message is required.'
+    valid = false
+  }
+  if (!valid) return
 
   exportSending.value = true
   try {
-    await sendPlantsCsvEmail({ to: trimmed(exportEmail.value), csv: buildPlantsCsv() })
+    await sendPlantsCsvEmail({
+      to: email,
+      csv: buildPlantsCsv(),
+      subject,
+      name: trimmed(exportName.value) || '',
+      description: exportDescription.value,
+    })
     exportSent.value = true
   } catch (err) {
     exportError.value = err?.message || 'Failed to send email. Please try again.'
