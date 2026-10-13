@@ -43,6 +43,22 @@ function toPlainText(html) {
   return sanitizeHtml(html, { allowedTags: [], allowedAttributes: [] }).trim()
 }
 
+async function sendMail(message) {
+  sgMail.setApiKey(SENDGRID_API_KEY.value())
+  await sgMail.send({ from: FROM_EMAIL, ...message })
+}
+
+function formatEventDate(dateStr) {
+  const parsed = new Date(dateStr)
+  if (isNaN(parsed.getTime())) return dateStr
+  return parsed.toLocaleDateString('en-AU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 exports.sendPlantsCsvEmail = onCall({ secrets: [SENDGRID_API_KEY] }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to email the plant list.')
@@ -82,12 +98,9 @@ exports.sendPlantsCsvEmail = onCall({ secrets: [SENDGRID_API_KEY] }, async (requ
   const html = `${safeDescription}${signOff}`
   const text = toPlainText(html)
 
-  sgMail.setApiKey(SENDGRID_API_KEY.value())
-
   try {
-    await sgMail.send({
+    await sendMail({
       to,
-      from: FROM_EMAIL,
       subject: subjectText,
       text,
       html,
@@ -431,7 +444,7 @@ exports.getAdminDashboardStats = onCall(async (request) => {
 // "booking conflict management" the calendar view needs). Mirrors the
 // booking into users/{uid}/myBookings so that same-day check is a single
 // doc read next time rather than a scan over every event's bookings.
-exports.bookEvent = onCall(async (request) => {
+exports.bookEvent = onCall({ secrets: [SENDGRID_API_KEY] }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to register for an event.')
   }
@@ -446,6 +459,8 @@ exports.bookEvent = onCall(async (request) => {
   const eventRef = db.collection('events').doc(eventId)
   const bookingRef = eventRef.collection('bookings').doc(uid)
   const myBookingsRef = db.collection('users').doc(uid).collection('myBookings')
+
+  let bookedEvent = null
 
   await db.runTransaction(async (tx) => {
     const eventSnap = await tx.get(eventRef)
@@ -482,13 +497,31 @@ exports.bookEvent = onCall(async (request) => {
       location: event.location,
       bookedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
+
+    bookedEvent = event
   })
+
+  // Best-effort: the booking itself already succeeded above, so a failed
+  // confirmation email shouldn't fail the registration - just log it.
+  const recipient = request.auth.token.email
+  if (recipient && bookedEvent) {
+    try {
+      await sendMail({
+        to: recipient,
+        subject: `You're registered: ${bookedEvent.title}`,
+        html: `<p>Hi there,</p><p>You're confirmed for <strong>${escapeHtml(bookedEvent.title)}</strong> on ${escapeHtml(formatEventDate(bookedEvent.date))} at ${escapeHtml(bookedEvent.location)}.</p><p>See you there!</p>`,
+        text: `You're confirmed for ${bookedEvent.title} on ${formatEventDate(bookedEvent.date)} at ${bookedEvent.location}.`,
+      })
+    } catch (err) {
+      console.error('Failed to send booking confirmation email', err?.response?.body || err)
+    }
+  }
 
   return { success: true }
 })
 
 // Cancels the caller's own registration, releasing the spot for someone else.
-exports.cancelBooking = onCall(async (request) => {
+exports.cancelBooking = onCall({ secrets: [SENDGRID_API_KEY] }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be signed in to cancel a booking.')
   }
@@ -504,15 +537,35 @@ exports.cancelBooking = onCall(async (request) => {
   const bookingRef = eventRef.collection('bookings').doc(uid)
   const myBookingRef = db.collection('users').doc(uid).collection('myBookings').doc(eventId)
 
+  let cancelledBooking = null
+
   await db.runTransaction(async (tx) => {
     const bookingSnap = await tx.get(bookingRef)
     if (!bookingSnap.exists) {
       throw new HttpsError('not-found', "You don't have a booking for this event.")
     }
+    const myBookingSnap = await tx.get(myBookingRef)
+    cancelledBooking = myBookingSnap.exists ? myBookingSnap.data() : null
+
     tx.update(eventRef, { bookedCount: admin.firestore.FieldValue.increment(-1) })
     tx.delete(bookingRef)
     tx.delete(myBookingRef)
   })
+
+  // Best-effort, same as bookEvent - cancellation already succeeded above.
+  const recipient = request.auth.token.email
+  if (recipient && cancelledBooking) {
+    try {
+      await sendMail({
+        to: recipient,
+        subject: `Booking cancelled: ${cancelledBooking.title}`,
+        html: `<p>Hi there,</p><p>Your registration for <strong>${escapeHtml(cancelledBooking.title)}</strong> on ${escapeHtml(formatEventDate(cancelledBooking.date))} has been cancelled.</p>`,
+        text: `Your registration for ${cancelledBooking.title} on ${formatEventDate(cancelledBooking.date)} has been cancelled.`,
+      })
+    } catch (err) {
+      console.error('Failed to send cancellation confirmation email', err?.response?.body || err)
+    }
+  }
 
   return { success: true }
 })
