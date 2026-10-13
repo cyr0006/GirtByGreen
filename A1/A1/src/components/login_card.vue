@@ -48,7 +48,13 @@
           <Button type="submit" class="w-full" :loading="submitting" @click="handleLogin"
             >Login</Button
           >
-          <Button type="button" severity="secondary" variant="outlined" class="w-full"
+          <Button
+            type="button"
+            severity="secondary"
+            variant="outlined"
+            class="w-full"
+            :loading="googleSubmitting"
+            @click="handleGoogleSignIn"
             >Login with Google</Button
           >
           <div class="mt-2 text-center text-surface-500 text-sm">
@@ -73,14 +79,17 @@ import Message from 'primevue/message'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 import { EMAIL_REGEX, trimmed } from '../utils/validation'
+import { useGoogleAuth } from '../composables/useGoogleAuth'
 
 const email = ref('')
 const password = ref('')
 const router = useRouter()
 const auth = getAuth()
+const { signInWithGoogle, saveGoogleUserRole, googleAuthErrorMessage } = useGoogleAuth()
 
 const submitting = ref(false)
 const submitError = ref('')
+const googleSubmitting = ref(false)
 
 function authErrorMessage(code) {
   switch (code) {
@@ -110,6 +119,29 @@ async function signin() {
     submitError.value = authErrorMessage(error.code)
   } finally {
     submitting.value = false
+  }
+}
+
+async function handleGoogleSignIn() {
+  googleSubmitting.value = true
+  submitError.value = ''
+
+  try {
+    const { user, isNewUser } = await signInWithGoogle()
+    if (isNewUser) {
+      // No role selector on the login form - default to 'user' (a brand-new
+      // Google sign-in here reads as "I don't have an account yet, let me
+      // in" rather than deliberately registering as an organisation).
+      await saveGoogleUserRole(user, 'user')
+    }
+    console.log('User signed in with Google:', user.uid)
+    router.push('/')
+  } catch (error) {
+    console.error('Google sign-in failed:', error.code, error.message)
+    const message = googleAuthErrorMessage(error.code)
+    if (message) submitError.value = message
+  } finally {
+    googleSubmitting.value = false
   }
 }
 

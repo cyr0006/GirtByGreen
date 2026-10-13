@@ -85,7 +85,13 @@
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button type="button" severity="secondary" variant="outlined" class="w-full"
+          <Button
+            type="button"
+            severity="secondary"
+            variant="outlined"
+            class="w-full"
+            :loading="googleSubmitting"
+            @click="handleGoogleRegister"
             >Register with Google</Button
           >
           <div class="mt-2 text-center text-surface-500 text-sm">
@@ -110,6 +116,7 @@ import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase
 import { getFirestore, doc, setDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 import { EMAIL_REGEX, trimmed, containsHtml } from '../utils/validation'
+import { useGoogleAuth } from '../composables/useGoogleAuth'
 
 const name = ref('')
 const email = ref('')
@@ -123,9 +130,11 @@ const roleOptions = ref([
 const router = useRouter()
 const auth = getAuth()
 const db = getFirestore()
+const { signInWithGoogle, saveGoogleUserRole, googleAuthErrorMessage } = useGoogleAuth()
 
 const submitting = ref(false)
 const submitError = ref('')
+const googleSubmitting = ref(false)
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -231,5 +240,30 @@ function handleRegister() {
     return
 
   register()
+}
+
+// Google sign-up skips the name/password fields, but still needs the role -
+// reuses the same selector and validation the email form uses.
+async function handleGoogleRegister() {
+  touched.role = true
+  if (errors.value.role) return
+
+  googleSubmitting.value = true
+  submitError.value = ''
+
+  try {
+    const { user, isNewUser } = await signInWithGoogle()
+    if (isNewUser) {
+      await saveGoogleUserRole(user, role.value)
+    }
+    console.log('User registered with Google:', user.uid)
+    router.push('/')
+  } catch (error) {
+    console.error('Google sign-up failed:', error.code, error.message)
+    const message = googleAuthErrorMessage(error.code)
+    if (message) submitError.value = message
+  } finally {
+    googleSubmitting.value = false
+  }
 }
 </script>
