@@ -59,7 +59,7 @@ function render() {
     return `<strong>${d.label}</strong><br>${d.count} project${d.count === 1 ? '' : 's'} (${pct}%)`
   }
   function wire(selection) {
-    selection
+    return selection
       .style('cursor', 'pointer')
       .on('click', (_event, d) => emit('select', d.label))
       .on('mousemove', (event, d) => show(tooltipHtml(d), event))
