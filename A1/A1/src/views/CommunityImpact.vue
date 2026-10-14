@@ -65,7 +65,9 @@ function rollupCounts(list, key) {
     (v) => v.length,
     (d) => d[key],
   )
-  return Array.from(counts, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)
+  return Array.from(counts, ([label, count]) => ({ label, count })).sort(
+    (a, b) => b.count - a.count,
+  )
 }
 
 const localityCounts = computed(() => rollupCounts(localityRows.value, 'locality').slice(0, 12))
@@ -111,9 +113,9 @@ function monthLabel(key) {
   <div class="px-8 pt-10 mb-8 text-left">
     <h1 class="text-4xl font-bold mb-2">Community Impact</h1>
     <p class="text-gray-500 mb-4">
-      A live look at the garden projects our community has registered through the AI Garden
-      Advisor. Click a bar, or drag across the timeline, to dig into a suburb, goal, or date
-      range — the other charts filter to match.
+      A live look at the garden projects our community has registered through the AI Garden Advisor.
+      Click a bar, or drag across the timeline, to dig into a suburb, goal, or date range; the other
+      charts filter to match.
     </p>
   </div>
 
@@ -125,8 +127,8 @@ function monthLabel(key) {
     <Message v-else-if="loadError" severity="error">{{ loadError }}</Message>
 
     <div v-else-if="!rows.length" class="card text-gray-500 py-8 text-center">
-      No garden projects have been registered yet — once people start one from the AI Garden
-      Advisor, these charts will fill in.
+      No garden projects have been registered yet; once people start one from the AI Garden Advisor,
+      these charts will fill in.
     </div>
 
     <template v-else>
