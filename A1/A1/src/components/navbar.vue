@@ -27,11 +27,11 @@
             :style="{ backgroundColor: avatarColorFor(user.uid), color: '#ffffff' }"
             @click="toggleProfileMenu"
           />
-          <Avatar
+          <Button
             v-else
-            :icon="User"
-            shape="circle"
-            class="cursor-pointer"
+            label="Sign In"
+            icon="pi pi-sign-in"
+            size="small"
             @click="router.push('/SignIn')"
           />
           <Menu ref="profileMenu" :model="profileMenuItems" :popup="true" />
@@ -53,6 +53,7 @@ import { avatarColorFor, avatarInitial } from '../utils/avatarColor'
 import logo from '../assets/GBG_Logo.png'
 import Menubar from 'primevue/menubar'
 import Menu from 'primevue/menu'
+import Button from 'primevue/button'
 import Badge from 'primevue/badge'
 import Avatar from 'primevue/avatar'
 import Ripple from 'primevue/ripple'
@@ -63,7 +64,7 @@ import Pencil from '@primeicons/vue/pencil'
 import Search from '@primeicons/vue/search'
 import Server from '@primeicons/vue/server'
 import Calendar from '@primeicons/vue/calendar'
-import SignInIcon from '@primeicons/vue/sign-in'
+import InfoCircle from '@primeicons/vue/info-circle'
 import SignOutIcon from '@primeicons/vue/sign-out'
 import Sparkles from '@primeicons/vue/sparkles'
 import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
@@ -123,13 +124,6 @@ const items = computed(() =>
       icon: HomeIcon,
       command: () => router.push('/'),
     },
-    !user.value
-      ? {
-          label: 'Sign In',
-          icon: SignInIcon,
-          command: () => router.push('/SignIn'),
-        }
-      : null,
     {
       label: 'Events',
       icon: Calendar,
@@ -141,9 +135,9 @@ const items = computed(() =>
       badge: 5,
       items: [
         {
-          label: 'News',
-          icon: Server,
-          command: () => router.push('/projects/blocks'),
+          label: 'About',
+          icon: InfoCircle,
+          command: () => router.push('/about'),
         },
         {
           separator: true,

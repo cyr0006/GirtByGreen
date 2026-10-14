@@ -12,6 +12,7 @@ import GardenProjects from '../views/GardenProjects.vue'
 import GardenProjectChat from '../views/GardenProjectChat.vue'
 import CommunityImpact from '../views/CommunityImpact.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
+import About from '../views/About.vue'
 import { useAuth } from '../composables/useAuth'
 
 const routes = [
@@ -73,6 +74,11 @@ const routes = [
     path: '/admin-dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard,
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About,
   },
 ]
 

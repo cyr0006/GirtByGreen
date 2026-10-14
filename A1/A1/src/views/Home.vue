@@ -6,6 +6,7 @@ import Pencil from '@primeicons/vue/pencil'
 import Server from '@primeicons/vue/server'
 import Bolt from '@primeicons/vue/bolt'
 import Calendar from '@primeicons/vue/calendar'
+import ChartBar from '@primeicons/vue/chart-bar'
 import hero from '@/components/hero.vue'
 
 const router = useRouter()
@@ -49,6 +50,14 @@ const quickLinks = [
     to: '/events',
     icon: Calendar,
     color: '#8f5a9e',
+  },
+  {
+    label: 'Community Impact',
+    description:
+      'See how many garden projects, suburbs and goals our community has reached so far.',
+    to: '/community-impact',
+    icon: ChartBar,
+    color: '#2c7a7b',
   },
 ]
 
