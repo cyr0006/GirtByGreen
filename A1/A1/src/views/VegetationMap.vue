@@ -13,6 +13,7 @@ import AutoComplete from 'primevue/autocomplete'
 import { HVI_RAMP, hviColor } from '@/utils/heatVulnerability'
 import { useAddressSearch } from '@/composables/useAddressSearch'
 import BlurText from '@/components/BlurText.vue'
+import TypeText from '@/components/TypeText.vue'
 
 let map = null
 let searchMarker = null
@@ -257,9 +258,13 @@ onBeforeUnmount(() => {
 <template>
   <div class="px-8 pt-10 mb-8 text-left">
     <BlurText tag="h1" text="Vegetation Cover Map" class="text-4xl font-bold mb-2" />
-    <p class="text-gray-500 mb-4">
-      Explore tree cover, heat vulnerability and biodiversity across Melbourne and Victoria.
-    </p>
+    <TypeText
+      tag="p"
+      class="text-gray-500 mb-4"
+      text="Explore tree cover, heat vulnerability and biodiversity across Melbourne and Victoria."
+      :loop="false"
+      :typing-speed="20"
+    />
   </div>
 
   <div class="vegetation-map-wrapper flex flex-col lg:flex-row gap-4">

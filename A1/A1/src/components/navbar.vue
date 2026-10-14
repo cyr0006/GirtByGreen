@@ -130,7 +130,7 @@ const items = computed(() =>
       command: () => router.push('/events'),
     },
     {
-      label: 'News and Resources',
+      label: 'About and Resources',
       icon: Search,
       badge: 5,
       items: [

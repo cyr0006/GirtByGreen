@@ -113,11 +113,15 @@ function monthLabel(key) {
 <template>
   <div class="px-8 pt-10 mb-8 text-left">
     <BlurText tag="h1" text="Community Impact" class="text-4xl font-bold mb-2" />
-    <p class="text-gray-500 mb-4">
-      A live look at the garden projects our community has registered through the AI Garden Advisor.
+    <TypeText
+      tag="p"
+      class="text-gray-500 mb-4"
+      text="A live look at the garden projects our community has registered through the AI Garden Advisor.
       Click a bar, or drag across the timeline, to dig into a suburb, goal, or date range; the other
-      charts filter to match.
-    </p>
+      charts filter to match."
+      :loop="false"
+      :typing-speed="20"
+    />
   </div>
 
   <div class="impact-wrapper">

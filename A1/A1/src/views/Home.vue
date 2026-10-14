@@ -133,7 +133,7 @@ const highlights = [
 
   <div class="home-divider" aria-hidden="true"></div>
 
-  <section class="py-16 px-8" style="background-color: var(--p-surface-800)">
+  <section class="py-16 px-8" style="background-color: var(--p-surface-900)">
     <div class="max-w-6xl mx-auto">
       <h2 class="text-2xl font-bold mb-2 text-center">Why GirtByGreen</h2>
       <p class="text-surface-300 text-sm text-center mb-10">Click a card to flip it over.</p>
@@ -143,7 +143,7 @@ const highlights = [
             :width="300"
             :height="200"
             :radius="16"
-            background="#1e2a24"
+            background="#0a6335"
             color="#f3f4f6"
             :shadow-opacity="0.35"
             :tilt-max="8"

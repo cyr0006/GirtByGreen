@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import BlurText from '../components/BlurText.vue'
+import TypeText from '../components/TypeText.vue'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
@@ -290,9 +291,13 @@ function formatDate(dateStr) {
   <div class="py-20 px-8 max-w-6xl mx-auto">
     <div class="mb-12 text-left">
       <BlurText tag="h1" text="Upcoming Events" class="text-4xl font-bold mb-2" />
-      <p class="text-gray-500 mb-4">
-        Browse our upcoming community events. Sign up to get involved and make a difference.
-      </p>
+      <TypeText
+        tag="p"
+        class="text-gray-500 mb-4"
+        text="Browse our upcoming community events. Sign up to get involved and make a difference."
+        :loop="false"
+        :typing-speed="20"
+      />
       <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" />
     </div>
 
@@ -300,9 +305,7 @@ function formatDate(dateStr) {
       {{ actionError }}
     </Message>
 
-    <div
-      class="flex flex-col sm:flex-row gap-4 mb-8 sm:items-center sm:justify-between flex-wrap"
-    >
+    <div class="flex flex-col sm:flex-row gap-4 mb-8 sm:items-center sm:justify-between flex-wrap">
       <Select
         v-model="categoryFilter"
         :options="categories"
@@ -316,7 +319,13 @@ function formatDate(dateStr) {
         </InputIcon>
         <InputText v-model="searchQuery" placeholder="Search events..." class="w-full" />
       </IconField>
-      <SelectButton v-model="activeView" :options="viewOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
+      <SelectButton
+        v-model="activeView"
+        :options="viewOptions"
+        optionLabel="label"
+        optionValue="value"
+        :allowEmpty="false"
+      />
     </div>
 
     <p v-if="!filteredEvents.length" class="text-center text-gray-500">
@@ -382,13 +391,24 @@ function formatDate(dateStr) {
       </Card>
     </div>
 
-    <Dialog v-model:visible="showDetails" :header="detailsEvent?.title" modal :style="{ width: '28rem' }">
+    <Dialog
+      v-model:visible="showDetails"
+      :header="detailsEvent?.title"
+      modal
+      :style="{ width: '28rem' }"
+    >
       <template v-if="detailsEvent">
         <div class="flex flex-col gap-2 mb-4">
-          <Tag :value="detailsEvent.category" :severity="categorySeverity[detailsEvent.category]" class="w-fit" />
+          <Tag
+            :value="detailsEvent.category"
+            :severity="categorySeverity[detailsEvent.category]"
+            class="w-fit"
+          />
           <span class="text-sm text-surface-500">{{ formatDate(detailsEvent.date) }}</span>
           <span class="text-sm text-surface-500">{{ detailsEvent.location }}</span>
-          <p class="text-sm text-surface-600 leading-relaxed mt-2">{{ detailsEvent.description }}</p>
+          <p class="text-sm text-surface-600 leading-relaxed mt-2">
+            {{ detailsEvent.description }}
+          </p>
           <span class="text-sm text-surface-400 mt-2">
             {{ isFull(detailsEvent) ? 'Fully booked' : `${remaining(detailsEvent)} spots left` }}
           </span>
@@ -462,7 +482,9 @@ function formatDate(dateStr) {
           />
           <small v-if="errors.category" class="text-red-500">{{ errors.category }}</small>
         </div>
-        <Message v-if="errors.submit" severity="error" :closable="false">{{ errors.submit }}</Message>
+        <Message v-if="errors.submit" severity="error" :closable="false">{{
+          errors.submit
+        }}</Message>
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" text @click="showDialog = false" />

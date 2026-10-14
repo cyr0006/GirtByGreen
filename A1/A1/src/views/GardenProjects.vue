@@ -12,6 +12,7 @@ import { useAddressSearch } from '@/composables/useAddressSearch'
 import { ProjectService } from '@/service/ProjectService'
 import { trimmed, containsHtml } from '@/utils/validation'
 import BlurText from '@/components/BlurText.vue'
+import TypeText from '@/components/TypeText.vue'
 
 const router = useRouter()
 const { user } = useAuth()
@@ -112,9 +113,14 @@ function formatDate(timestamp) {
   <div class="py-20 px-8 max-w-6xl mx-auto">
     <div class="mb-12 text-left">
       <BlurText tag="h1" text="AI Garden Advisor" class="text-4xl font-bold mb-2" />
-      <p class="text-gray-500 mb-4">
-        Create a project for your garden and chat with an AI advisor for tailored planting advice.
-      </p>
+      <TypeText
+        tag="p"
+        class="text-gray-500 mb-4"
+        text="Create a project for your garden and chat with an AI advisor for tailored planting advice."
+        :loop="false"
+        :typing-speed="20"
+      />
+      <br />
       <Button icon="pi pi-plus" label="New Project" @click="openDialog" />
     </div>
 
@@ -132,9 +138,13 @@ function formatDate(timestamp) {
         @click="router.push(`/my-garden-projects/${project.id}`)"
       >
         <template #title>{{ project.address }}</template>
-        <template #subtitle>{{ project.locality }} &middot; {{ formatDate(project.createdAt) }}</template>
+        <template #subtitle
+          >{{ project.locality }} &middot; {{ formatDate(project.createdAt) }}</template
+        >
         <template #content>
-          <p class="text-surface-600 text-sm leading-relaxed"><strong>Goal:</strong> {{ project.goal }}</p>
+          <p class="text-surface-600 text-sm leading-relaxed">
+            <strong>Goal:</strong> {{ project.goal }}
+          </p>
         </template>
         <template #footer>
           <Button label="Open chat" size="small" />
@@ -142,7 +152,12 @@ function formatDate(timestamp) {
       </Card>
     </div>
 
-    <Dialog v-model:visible="showDialog" header="New Garden Project" modal :style="{ width: '30rem' }">
+    <Dialog
+      v-model:visible="showDialog"
+      header="New Garden Project"
+      modal
+      :style="{ width: '30rem' }"
+    >
       <div class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Address</label>
