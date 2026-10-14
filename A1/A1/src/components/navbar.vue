@@ -2,7 +2,13 @@
   <div class="w-full">
     <Menubar :model="items">
       <template #start>
-        <img src="@/assets/GBG_Logo.png" style="border-radius: 40%" alt="Logo" class="h-8" />
+        <img
+          src="@/assets/GBG_Logo.png"
+          style="border-radius: 40%"
+          alt="Logo"
+          class="h-8 cursor-pointer"
+          @click="router.push('/')"
+        />
       </template>
       <template #item="{ item, props, hasSubmenu, root }">
         <a v-ripple class="flex items-center px-3 py-2 cursor-pointer gap-2" v-bind="props.action">
