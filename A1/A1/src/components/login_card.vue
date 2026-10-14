@@ -13,7 +13,7 @@
               type="email"
               autocomplete="email"
               maxlength="254"
-              :invalid="touched.email && errors.email"
+              :invalid="touched.email && !!errors.email"
               @blur="touched.email = true"
             />
             <small v-if="touched.email && errors.email" class="text-red-500">{{
@@ -31,7 +31,7 @@
               type="password"
               autocomplete="current-password"
               maxlength="128"
-              :invalid="touched.password && errors.password"
+              :invalid="touched.password && !!errors.password"
               @blur="touched.password = true"
             />
             <small v-if="touched.password && errors.password" class="text-red-500">{{

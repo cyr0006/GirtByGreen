@@ -13,7 +13,7 @@
               type="text"
               autocomplete="name"
               maxlength="100"
-              :invalid="touched.name && errors.name"
+              :invalid="touched.name && !!errors.name"
               @blur="touched.name = true"
             />
             <small v-if="touched.name && errors.name" class="text-red-500">{{ errors.name }}</small>
@@ -26,10 +26,10 @@
               type="email"
               autocomplete="email"
               maxlength="254"
-              :invalid="touched.email && errors.email"
+              :invalid="touched.email && !!errors.email"
               @blur="touched.email = true"
             />
-            <small v-if="touched.email && errors.email" class="text-red-500">{{
+            <small v-if="touched.email && !!errors.email" class="text-red-500">{{
               errors.email
             }}</small>
           </div>
@@ -43,10 +43,10 @@
               type="password"
               autocomplete="new-password"
               maxlength="128"
-              :invalid="touched.password && errors.password"
+              :invalid="touched.password && !!errors.password"
               @blur="touched.password = true"
             />
-            <small v-if="touched.password && errors.password" class="text-red-500">{{
+            <small v-if="touched.password && !!errors.password" class="text-red-500">{{
               errors.password
             }}</small>
           </div>
@@ -58,12 +58,14 @@
               type="password"
               autocomplete="new-password"
               maxlength="128"
-              :invalid="touched.confirmPassword && errors.confirmPassword"
+              :invalid="touched.confirmPassword && !!errors.confirmPassword"
               @blur="touched.confirmPassword = true"
             />
-            <small v-if="touched.confirmPassword && errors.confirmPassword" class="text-red-500">{{
-              errors.confirmPassword
-            }}</small>
+            <small
+              v-if="touched.confirmPassword && !!errors.confirmPassword"
+              class="text-red-500"
+              >{{ errors.confirmPassword }}</small
+            >
           </div>
           <div class="flex flex-col gap-2">
             <Label for="role">I am registering as</Label>
@@ -77,18 +79,16 @@
               class="w-full"
               @change="touched.role = true"
             />
-            <small v-if="touched.role && errors.role" class="text-red-500">{{ errors.role }}</small>
+            <small v-if="touched.role && !!errors.role" class="text-red-500">{{
+              errors.role
+            }}</small>
           </div>
           <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
           <Message v-if="registrationPending" severity="info" :closable="false">
-            Thanks for registering! Organisation accounts need admin approval before you can sign
-            in - we'll let you know once that's done.
+            Thanks for registering! Organisation accounts need admin approval before you can sign in
+            - we'll let you know once that's done.
           </Message>
-          <Button
-            v-if="!registrationPending"
-            type="submit"
-            class="w-full"
-            :loading="submitting"
+          <Button v-if="!registrationPending" type="submit" class="w-full" :loading="submitting"
             >Register</Button
           >
         </form>
