@@ -444,43 +444,85 @@ function formatDate(dateStr) {
     <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
       <div class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Title</label>
-          <InputText v-model="newEvent.title" placeholder="Event title" maxlength="100" />
-          <small v-if="errors.title" class="text-red-500">{{ errors.title }}</small>
+          <label for="event-title" class="text-sm font-medium">Title</label>
+          <InputText
+            id="event-title"
+            v-model="newEvent.title"
+            placeholder="Event title"
+            maxlength="100"
+            :invalid="!!errors.title"
+            :aria-describedby="errors.title ? 'event-title-error' : undefined"
+          />
+          <small v-if="errors.title" id="event-title-error" class="text-red-500">{{ errors.title }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Date</label>
-          <InputText v-model="newEvent.date" type="date" />
-          <small v-if="errors.date" class="text-red-500">{{ errors.date }}</small>
+          <label for="event-date" class="text-sm font-medium">Date</label>
+          <InputText
+            id="event-date"
+            v-model="newEvent.date"
+            type="date"
+            :invalid="!!errors.date"
+            :aria-describedby="errors.date ? 'event-date-error' : undefined"
+          />
+          <small v-if="errors.date" id="event-date-error" class="text-red-500">{{ errors.date }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Location</label>
-          <InputText v-model="newEvent.location" placeholder="Event location" maxlength="150" />
-          <small v-if="errors.location" class="text-red-500">{{ errors.location }}</small>
+          <label for="event-location" class="text-sm font-medium">Location</label>
+          <InputText
+            id="event-location"
+            v-model="newEvent.location"
+            placeholder="Event location"
+            maxlength="150"
+            :invalid="!!errors.location"
+            :aria-describedby="errors.location ? 'event-location-error' : undefined"
+          />
+          <small v-if="errors.location" id="event-location-error" class="text-red-500">{{
+            errors.location
+          }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Description</label>
+          <label for="event-description" class="text-sm font-medium">Description</label>
           <Textarea
+            id="event-description"
             v-model="newEvent.description"
             rows="3"
             placeholder="Event description"
             maxlength="1000"
+            :invalid="!!errors.description"
+            :aria-describedby="errors.description ? 'event-description-error' : undefined"
           />
-          <small v-if="errors.description" class="text-red-500">{{ errors.description }}</small>
+          <small v-if="errors.description" id="event-description-error" class="text-red-500">{{
+            errors.description
+          }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Available Spots</label>
-          <InputText v-model.number="newEvent.capacity" type="number" min="1" max="100000" />
-          <small v-if="errors.capacity" class="text-red-500">{{ errors.capacity }}</small>
+          <label for="event-capacity" class="text-sm font-medium">Available Spots</label>
+          <InputText
+            id="event-capacity"
+            v-model.number="newEvent.capacity"
+            type="number"
+            min="1"
+            max="100000"
+            :invalid="!!errors.capacity"
+            :aria-describedby="errors.capacity ? 'event-capacity-error' : undefined"
+          />
+          <small v-if="errors.capacity" id="event-capacity-error" class="text-red-500">{{
+            errors.capacity
+          }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Category</label>
+          <label for="event-category" class="text-sm font-medium">Category</label>
           <Select
+            id="event-category"
             v-model="newEvent.category"
             :options="categories"
             placeholder="Select a category"
+            :invalid="!!errors.category"
+            :aria-describedby="errors.category ? 'event-category-error' : undefined"
           />
-          <small v-if="errors.category" class="text-red-500">{{ errors.category }}</small>
+          <small v-if="errors.category" id="event-category-error" class="text-red-500">{{
+            errors.category
+          }}</small>
         </div>
         <Message v-if="errors.submit" severity="error" :closable="false">{{
           errors.submit

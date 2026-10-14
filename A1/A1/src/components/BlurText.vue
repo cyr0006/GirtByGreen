@@ -100,11 +100,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <component :is="tag" ref="rootRef" class="blur-text flex flex-wrap">
+  <component :is="tag" ref="rootRef" class="blur-text flex flex-wrap" :aria-label="text">
     <span
       v-for="(segment, index) in displaySegments"
       :key="index"
       ref="spanRefs"
+      aria-hidden="true"
       class="inline-block will-change-[transform,filter,opacity]"
       >{{ segment }}</span
     >

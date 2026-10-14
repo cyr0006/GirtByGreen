@@ -638,5 +638,5 @@ defineExpose({
 </script>
 
 <template>
-  <canvas ref="canvasRef" class="pointer-events-none block h-full w-full" />
+  <canvas ref="canvasRef" aria-hidden="true" class="pointer-events-none block h-full w-full" />
 </template>

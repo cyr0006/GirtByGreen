@@ -14,9 +14,10 @@
               autocomplete="email"
               maxlength="254"
               :invalid="touched.email && !!errors.email"
+              :aria-describedby="touched.email && errors.email ? 'email-error' : undefined"
               @blur="touched.email = true"
             />
-            <small v-if="touched.email && errors.email" class="text-red-500">{{
+            <small v-if="touched.email && errors.email" id="email-error" class="text-red-500">{{
               errors.email
             }}</small>
           </div>
@@ -32,9 +33,10 @@
               autocomplete="current-password"
               maxlength="128"
               :invalid="touched.password && !!errors.password"
+              :aria-describedby="touched.password && errors.password ? 'password-error' : undefined"
               @blur="touched.password = true"
             />
-            <small v-if="touched.password && errors.password" class="text-red-500">{{
+            <small v-if="touched.password && errors.password" id="password-error" class="text-red-500">{{
               errors.password
             }}</small>
           </div>

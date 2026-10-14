@@ -14,9 +14,10 @@
               autocomplete="name"
               maxlength="100"
               :invalid="touched.name && !!errors.name"
+              :aria-describedby="touched.name && errors.name ? 'name-error' : undefined"
               @blur="touched.name = true"
             />
-            <small v-if="touched.name && errors.name" class="text-red-500">{{ errors.name }}</small>
+            <small v-if="touched.name && errors.name" id="name-error" class="text-red-500">{{ errors.name }}</small>
           </div>
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
@@ -27,9 +28,10 @@
               autocomplete="email"
               maxlength="254"
               :invalid="touched.email && !!errors.email"
+              :aria-describedby="touched.email && errors.email ? 'reg-email-error' : undefined"
               @blur="touched.email = true"
             />
-            <small v-if="touched.email && !!errors.email" class="text-red-500">{{
+            <small v-if="touched.email && !!errors.email" id="reg-email-error" class="text-red-500">{{
               errors.email
             }}</small>
           </div>
@@ -44,9 +46,10 @@
               autocomplete="new-password"
               maxlength="128"
               :invalid="touched.password && !!errors.password"
+              :aria-describedby="touched.password && errors.password ? 'reg-password-error' : undefined"
               @blur="touched.password = true"
             />
-            <small v-if="touched.password && !!errors.password" class="text-red-500">{{
+            <small v-if="touched.password && !!errors.password" id="reg-password-error" class="text-red-500">{{
               errors.password
             }}</small>
           </div>
@@ -59,10 +62,14 @@
               autocomplete="new-password"
               maxlength="128"
               :invalid="touched.confirmPassword && !!errors.confirmPassword"
+              :aria-describedby="
+                touched.confirmPassword && errors.confirmPassword ? 'confirm-password-error' : undefined
+              "
               @blur="touched.confirmPassword = true"
             />
             <small
               v-if="touched.confirmPassword && !!errors.confirmPassword"
+              id="confirm-password-error"
               class="text-red-500"
               >{{ errors.confirmPassword }}</small
             >
@@ -75,11 +82,12 @@
               :options="roleOptions"
               optionLabel="label"
               optionValue="value"
-              :invalid="touched.role && errors.role"
+              :invalid="touched.role && !!errors.role"
               class="w-full"
+              :aria-describedby="touched.role && errors.role ? 'role-error' : undefined"
               @change="touched.role = true"
             />
-            <small v-if="touched.role && !!errors.role" class="text-red-500">{{
+            <small v-if="touched.role && !!errors.role" id="role-error" class="text-red-500">{{
               errors.role
             }}</small>
           </div>

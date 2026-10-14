@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, useAttrs } from 'vue'
 
 function parseHSL(hslStr) {
   const match = hslStr.match(/([\d.]+)\s*([\d.]+)%?\s*([\d.]+)%?/)
@@ -89,6 +89,22 @@ const isHovered = ref(false)
 const cursorAngle = ref(45)
 const edgeProximity = ref(0)
 const sweepActive = ref(false)
+
+// A consumer that attaches @click makes this card interactive. A plain
+// clickable <div> is invisible to keyboard/screen-reader users, so when a
+// click listener is present we expose button semantics and let Enter/Space
+// activate it too - same as a real <button> would, with no extra markup
+// needed at each call site.
+const attrs = useAttrs()
+const isInteractive = computed(() => Boolean(attrs.onClick))
+
+function onKeydown(e) {
+  if (!isInteractive.value || (e.key !== 'Enter' && e.key !== ' ')) return
+  e.preventDefault()
+  const handler = attrs.onClick
+  if (Array.isArray(handler)) handler.forEach((h) => h(e))
+  else handler?.(e)
+}
 
 function getCenterOfElement(el) {
   const { width, height } = el.getBoundingClientRect()
@@ -265,9 +281,12 @@ const innerGlowStyle = computed(() => ({
     ref="cardRef"
     class="relative grid isolate border"
     :style="rootStyle"
+    :role="isInteractive ? 'button' : undefined"
+    :tabindex="isInteractive ? 0 : undefined"
     @pointermove="handlePointerMove"
     @pointerenter="isHovered = true"
     @pointerleave="isHovered = false"
+    @keydown="onKeydown"
   >
     <div class="absolute inset-0 rounded-[inherit] -z-[1]" :style="borderLayerStyle" />
     <div class="absolute inset-0 rounded-[inherit] -z-[1]" :style="fillLayerStyle" />

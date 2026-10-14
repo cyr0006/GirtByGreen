@@ -160,38 +160,47 @@ function formatDate(timestamp) {
     >
       <div class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Address</label>
+          <label for="project-address" class="text-sm font-medium">Address</label>
           <AutoComplete
+            id="project-address"
             v-model="selectedAddress"
             :suggestions="addressSuggestions"
             optionLabel="label"
             placeholder="Search a Victorian address..."
             class="w-full"
             :inputStyle="{ width: '100%' }"
+            :invalid="!!errors.address || !!addressError"
+            :aria-describedby="errors.address || addressError ? 'address-error' : undefined"
             @complete="searchAddress"
           />
-          <small v-if="errors.address" class="text-red-500">{{ errors.address }}</small>
-          <small v-else-if="addressError" class="text-red-500">{{ addressError }}</small>
+          <small v-if="errors.address" id="address-error" class="text-red-500">{{ errors.address }}</small>
+          <small v-else-if="addressError" id="address-error" class="text-red-500">{{ addressError }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Goal</label>
+          <label for="project-goal" class="text-sm font-medium">Goal</label>
           <Textarea
+            id="project-goal"
             v-model="newProject.goal"
             rows="2"
             placeholder="e.g. Attract native birds, grow a low-maintenance screen..."
             maxlength="300"
+            :invalid="!!errors.goal"
+            :aria-describedby="errors.goal ? 'goal-error' : undefined"
           />
-          <small v-if="errors.goal" class="text-red-500">{{ errors.goal }}</small>
+          <small v-if="errors.goal" id="goal-error" class="text-red-500">{{ errors.goal }}</small>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Space / conditions</label>
+          <label for="project-conditions" class="text-sm font-medium">Space / conditions</label>
           <Textarea
+            id="project-conditions"
             v-model="newProject.conditions"
             rows="3"
             placeholder="e.g. 3x4m sunny courtyard, clay soil, exposed to wind..."
             maxlength="500"
+            :invalid="!!errors.conditions"
+            :aria-describedby="errors.conditions ? 'conditions-error' : undefined"
           />
-          <small v-if="errors.conditions" class="text-red-500">{{ errors.conditions }}</small>
+          <small v-if="errors.conditions" id="conditions-error" class="text-red-500">{{ errors.conditions }}</small>
         </div>
         <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
       </div>

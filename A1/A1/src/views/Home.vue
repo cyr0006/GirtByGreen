@@ -112,8 +112,12 @@ const highlights = [
       <Card
         v-for="item in quickLinks"
         :key="item.label"
+        role="button"
+        tabindex="0"
         class="shadow-sm cursor-pointer home-quick-link"
         @click="router.push(item.to)"
+        @keydown.enter="router.push(item.to)"
+        @keydown.space.prevent="router.push(item.to)"
       >
         <template #content>
           <div class="flex flex-col items-center text-center gap-3 py-4">

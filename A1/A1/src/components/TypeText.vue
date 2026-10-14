@@ -44,6 +44,12 @@ const shouldHideCursor = computed(
     (currentCharIndex.value < textArray.value[currentTextIndex.value].length || isDeleting.value),
 )
 
+// The typing animation fragments the string across rapid DOM mutations with
+// no reliable "done" moment a screen reader can key off, so the accessible
+// name comes from a static aria-label instead - the sentence that's actually
+// shown when loop is off (our real usage), or the first one when looping.
+const accessibleLabel = computed(() => textArray.value[0] ?? '')
+
 function getRandomSpeed() {
   if (!props.variableSpeed) return props.typingSpeed
   const { min, max } = props.variableSpeed
@@ -138,11 +144,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <component :is="tag" ref="containerRef" class="inline-block whitespace-pre-wrap tracking-tight">
-    <span class="inline" :style="{ color: currentColor }">{{ displayedText }}</span>
+  <component
+    :is="tag"
+    ref="containerRef"
+    class="inline-block whitespace-pre-wrap tracking-tight"
+    :aria-label="accessibleLabel"
+  >
+    <span class="inline" :style="{ color: currentColor }" aria-hidden="true">{{ displayedText }}</span>
     <span
       v-if="showCursor"
       ref="cursorRef"
+      aria-hidden="true"
       :class="['ml-1 inline-block opacity-100', shouldHideCursor ? 'hidden' : '', cursorClassName]"
       >{{ cursorCharacter }}</span
     >
