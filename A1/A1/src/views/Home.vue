@@ -9,6 +9,7 @@ import Calendar from '@primeicons/vue/calendar'
 import ChartBar from '@primeicons/vue/chart-bar'
 import hero from '@/components/hero.vue'
 import TextLoop from '@/components/TextLoop.vue'
+import FlipCard from '@/components/FlipCard.vue'
 
 const router = useRouter()
 
@@ -134,16 +135,35 @@ const highlights = [
 
   <section class="py-16 px-8" style="background-color: var(--p-surface-800)">
     <div class="max-w-6xl mx-auto">
-      <h2 class="text-2xl font-bold mb-10 text-center">Why GirtByGreen</h2>
+      <h2 class="text-2xl font-bold mb-2 text-center">Why GirtByGreen</h2>
+      <p class="text-surface-300 text-sm text-center mb-10">Click a card to flip it over.</p>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card v-for="item in highlights" :key="item.title" class="shadow-sm">
-          <template #content>
-            <div class="text-center p-2">
-              <h3 class="text-xl font-semibold mb-3">{{ item.title }}</h3>
-              <p class="text-gray-500 text-sm leading-relaxed">{{ item.description }}</p>
-            </div>
-          </template>
-        </Card>
+        <div v-for="item in highlights" :key="item.title" class="flex justify-center">
+          <FlipCard
+            :width="300"
+            :height="200"
+            :radius="16"
+            background="#1e2a24"
+            color="#f3f4f6"
+            :shadow-opacity="0.35"
+            :tilt-max="8"
+            :hover-scale="1.02"
+            :draggable="false"
+            :aria-label="`${item.title} - flip for details`"
+          >
+            <template #front>
+              <div class="flex h-full flex-col items-center justify-center text-center gap-2 px-6">
+                <h3 class="text-lg font-semibold">{{ item.title }}</h3>
+                <p class="text-xs text-[#cbd5cf]">Click to read more</p>
+              </div>
+            </template>
+            <template #back>
+              <div class="flex h-full flex-col items-center justify-center text-center gap-2 px-6">
+                <p class="text-sm text-[#cbd5cf] leading-relaxed">{{ item.description }}</p>
+              </div>
+            </template>
+          </FlipCard>
+        </div>
       </div>
     </div>
   </section>

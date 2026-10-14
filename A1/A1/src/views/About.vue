@@ -1,7 +1,7 @@
 <script setup>
-import Card from 'primevue/card'
 import Button from 'primevue/button'
 import BlurText from '@/components/BlurText.vue'
+import FlipCard from '@/components/FlipCard.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -51,15 +51,34 @@ const values = [
   </section>
 
   <section class="px-8 pb-16 max-w-6xl mx-auto">
+    <p class="text-gray-400 text-sm text-center mb-6">Click a card to flip it over.</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Card v-for="item in values" :key="item.title" class="shadow-sm">
-        <template #content>
-          <div class="text-center p-2">
-            <h3 class="text-xl font-semibold mb-3">{{ item.title }}</h3>
-            <p class="text-gray-500 text-sm leading-relaxed">{{ item.description }}</p>
-          </div>
-        </template>
-      </Card>
+      <div v-for="item in values" :key="item.title" class="flex justify-center">
+        <FlipCard
+          :width="300"
+          :height="200"
+          :radius="16"
+          background="#1e2a24"
+          color="#f3f4f6"
+          :shadow-opacity="0.3"
+          :tilt-max="8"
+          :hover-scale="1.02"
+          :draggable="false"
+          :aria-label="`${item.title} - flip for details`"
+        >
+          <template #front>
+            <div class="flex h-full flex-col items-center justify-center text-center gap-2 px-6">
+              <h3 class="text-lg font-semibold">{{ item.title }}</h3>
+              <p class="text-xs text-[#cbd5cf]">Click to read more</p>
+            </div>
+          </template>
+          <template #back>
+            <div class="flex h-full flex-col items-center justify-center text-center gap-2 px-6">
+              <p class="text-sm text-[#cbd5cf] leading-relaxed">{{ item.description }}</p>
+            </div>
+          </template>
+        </FlipCard>
+      </div>
     </div>
   </section>
 
