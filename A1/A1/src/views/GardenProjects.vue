@@ -11,6 +11,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useAddressSearch } from '@/composables/useAddressSearch'
 import { ProjectService } from '@/service/ProjectService'
 import { trimmed, containsHtml } from '@/utils/validation'
+import BlurText from '@/components/BlurText.vue'
 
 const router = useRouter()
 const { user } = useAuth()
@@ -110,7 +111,7 @@ function formatDate(timestamp) {
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
     <div class="mb-12 text-left">
-      <h1 class="text-4xl font-bold mb-2">AI Garden Advisor</h1>
+      <BlurText tag="h1" text="AI Garden Advisor" class="text-4xl font-bold mb-2" />
       <p class="text-gray-500 mb-4">
         Create a project for your garden and chat with an AI advisor for tailored planting advice.
       </p>

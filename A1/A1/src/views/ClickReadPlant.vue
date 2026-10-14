@@ -1,10 +1,11 @@
 <script setup>
 import CRPTable from '../components/crp_datatable.vue'
+import BlurText from '../components/BlurText.vue'
 </script>
 
 <template>
   <div class="px-8 pt-10 mb-8 text-left">
-    <h1 class="text-4xl font-bold mb-2">Click, Read &amp; Plant</h1>
+    <BlurText tag="h1" text="Click, Read &amp; Plant" class="text-4xl font-bold mb-2" />
     <p class="text-gray-500 mb-4">
       Find your next tree planting opportunity and make a difference!
     </p>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
+import BlurText from '../components/BlurText.vue'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
@@ -288,7 +289,7 @@ function formatDate(dateStr) {
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
     <div class="mb-12 text-left">
-      <h1 class="text-4xl font-bold mb-2">Upcoming Events</h1>
+      <BlurText tag="h1" text="Upcoming Events" class="text-4xl font-bold mb-2" />
       <p class="text-gray-500 mb-4">
         Browse our upcoming community events. Sign up to get involved and make a difference.
       </p>

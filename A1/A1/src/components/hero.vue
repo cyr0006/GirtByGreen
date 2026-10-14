@@ -2,8 +2,8 @@
 import Button from 'primevue/button'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import heroforest from '../assets/heroforest.jpg'
 import BlurText from './BlurText.vue'
+import DotGrid from './DotGrid.vue'
 
 const router = useRouter()
 const { user } = useAuth()
@@ -19,11 +19,22 @@ function learnMore() {
 
 <template>
   <div
-    class="relative flex items-center justify-center min-h-[calc(100vh-80px)] bg-cover bg-center"
-    :style="{ backgroundImage: `url(${heroforest})` }"
+    class="relative flex items-center justify-center min-h-[calc(100vh-80px)] overflow-hidden"
+    style="background-color: #0b1f14"
   >
-    <div class="absolute inset-0 bg-black/50"></div>
-    <div class="relative text-center text-white px-4 max-w-2xl">
+    <DotGrid
+      class="absolute inset-0"
+      base-color="#1f3d2a"
+      active-color="#86efac"
+      :dot-size="4"
+      :gap="22"
+      :proximity="130"
+      :shock-strength="4"
+    />
+    <div
+      class="relative z-10 text-center text-white px-8 py-10 max-w-2xl rounded-2xl border border-white/10 shadow-xl"
+      style="background-color: rgba(0, 0, 0, 0.35); backdrop-filter: blur(6px)"
+    >
       <BlurText
         tag="h1"
         text="Welcome to GirtByGreen"

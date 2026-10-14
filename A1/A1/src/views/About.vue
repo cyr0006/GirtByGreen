@@ -1,6 +1,7 @@
 <script setup>
 import Card from 'primevue/card'
 import Button from 'primevue/button'
+import BlurText from '@/components/BlurText.vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -26,7 +27,7 @@ const values = [
 
 <template>
   <div class="px-8 pt-10 pb-4 max-w-3xl mx-auto text-center">
-    <h1 class="text-4xl font-bold mb-3">About GirtByGreen</h1>
+    <BlurText tag="h1" text="About GirtByGreen" class="text-4xl font-bold mb-3 justify-center" />
     <p class="text-gray-500 leading-relaxed">
       GirtByGreen helps Melbourne communities green their own patch of the city - one street, one
       garden, one tree at a time.

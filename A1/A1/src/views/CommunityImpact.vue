@@ -6,6 +6,7 @@ import Message from 'primevue/message'
 import Button from 'primevue/button'
 import D3BarChart from '@/components/D3BarChart.vue'
 import D3TimeSeries from '@/components/D3TimeSeries.vue'
+import BlurText from '@/components/BlurText.vue'
 import { ProjectStatsService } from '@/service/ProjectStatsService'
 
 const GREEN = '#15803d'
@@ -111,7 +112,7 @@ function monthLabel(key) {
 
 <template>
   <div class="px-8 pt-10 mb-8 text-left">
-    <h1 class="text-4xl font-bold mb-2">Community Impact</h1>
+    <BlurText tag="h1" text="Community Impact" class="text-4xl font-bold mb-2" />
     <p class="text-gray-500 mb-4">
       A live look at the garden projects our community has registered through the AI Garden Advisor.
       Click a bar, or drag across the timeline, to dig into a suburb, goal, or date range; the other

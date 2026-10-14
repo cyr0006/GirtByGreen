@@ -10,6 +10,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 import { AdminService } from '@/service/AdminService'
 import { useAuth } from '@/composables/useAuth'
+import BlurText from '@/components/BlurText.vue'
 
 const confirm = useConfirm()
 const { user } = useAuth()
@@ -149,7 +150,7 @@ function confirmDeleteAccount(account) {
 
 <template>
   <div class="px-8 pt-10 mb-8 text-left">
-    <h1 class="text-4xl font-bold mb-2">Admin Dashboard</h1>
+    <BlurText tag="h1" text="Admin Dashboard" class="text-4xl font-bold mb-2" />
     <p class="text-gray-500 mb-4">An overview of accounts and activity across GirtByGreen.</p>
   </div>
 
