@@ -9,7 +9,7 @@ import TypeText from '../components/TypeText.vue'
     <BlurText tag="h1" text="Suburb Canopy &amp; Heat Data" class="text-4xl font-bold mb-2" />
     <TypeText
       tag="p"
-      class="text-gray-500 mb-4"
+      class="text-muted-color mb-4"
       text="See how vegetation cover and heat vulnerability compare across Melbourne's suburbs."
       :loop="false"
       :typing-speed="20"

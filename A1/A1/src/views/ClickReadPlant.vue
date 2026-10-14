@@ -9,7 +9,7 @@ import TypeText from '../components/TypeText.vue'
     <BlurText tag="h1" text="Click, Read &amp; Plant" class="text-4xl font-bold mb-2" />
     <TypeText
       tag="p"
-      class="text-gray-500 mb-4"
+      class="text-muted-color mb-4"
       text="Find your next tree planting opportunity and make a difference!"
       :loop="false"
       :typing-speed="20"

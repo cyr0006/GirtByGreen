@@ -115,7 +115,7 @@ function formatDate(timestamp) {
       <BlurText tag="h1" text="AI Garden Advisor" class="text-4xl font-bold mb-2" />
       <TypeText
         tag="p"
-        class="text-gray-500 mb-4"
+        class="text-muted-color mb-4"
         text="Create a project for your garden and chat with an AI advisor for tailored planting advice."
         :loop="false"
         :typing-speed="20"

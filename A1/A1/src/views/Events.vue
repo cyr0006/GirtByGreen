@@ -293,7 +293,7 @@ function formatDate(dateStr) {
       <BlurText tag="h1" text="Upcoming Events" class="text-4xl font-bold mb-2" />
       <TypeText
         tag="p"
-        class="text-gray-500 mb-4"
+        class="text-muted-color mb-4"
         text="Browse our upcoming community events. Sign up to get involved and make a difference."
         :loop="false"
         :typing-speed="20"
@@ -328,7 +328,7 @@ function formatDate(dateStr) {
       />
     </div>
 
-    <p v-if="!filteredEvents.length" class="text-center text-gray-500">
+    <p v-if="!filteredEvents.length" class="text-center text-muted-color">
       No events match your filters.
     </p>
 

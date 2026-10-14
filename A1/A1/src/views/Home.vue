@@ -102,7 +102,7 @@ const highlights = [
   <section id="explore" class="py-20 px-8 max-w-6xl mx-auto">
     <div class="text-center mb-12">
       <h2 class="text-3xl font-bold mb-4">Explore GirtByGreen</h2>
-      <p class="text-gray-600 leading-relaxed max-w-2xl mx-auto">
+      <p class="text-muted-color leading-relaxed max-w-2xl mx-auto">
         Everything you need to green your patch of Melbourne - from suburb-level vegetation data to
         an AI advisor for your own garden.
       </p>
@@ -124,7 +124,7 @@ const highlights = [
               <component :is="item.icon" class="w-6 h-6" style="color: #ffffff" />
             </div>
             <h3 class="font-semibold">{{ item.label }}</h3>
-            <p class="text-sm text-gray-500 leading-relaxed">{{ item.description }}</p>
+            <p class="text-sm text-muted-color leading-relaxed">{{ item.description }}</p>
           </div>
         </template>
       </Card>

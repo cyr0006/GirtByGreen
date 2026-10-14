@@ -115,7 +115,7 @@ function monthLabel(key) {
     <BlurText tag="h1" text="Community Impact" class="text-4xl font-bold mb-2" />
     <TypeText
       tag="p"
-      class="text-gray-500 mb-4"
+      class="text-muted-color mb-4"
       text="A live look at the garden projects our community has registered through the AI Garden Advisor.
       Click a bar, or drag across the timeline, to dig into a suburb, goal, or date range; the other
       charts filter to match."
@@ -131,7 +131,7 @@ function monthLabel(key) {
 
     <Message v-else-if="loadError" severity="error">{{ loadError }}</Message>
 
-    <div v-else-if="!rows.length" class="card text-gray-500 py-8 text-center">
+    <div v-else-if="!rows.length" class="card text-muted-color py-8 text-center">
       No garden projects have been registered yet; once people start one from the AI Garden Advisor,
       these charts will fill in.
     </div>
@@ -155,7 +155,7 @@ function monthLabel(key) {
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div class="card">
           <h2 class="text-lg font-semibold mb-1">By suburb</h2>
-          <p class="text-sm text-gray-500 mb-3">Click a bar to filter the other charts.</p>
+          <p class="text-sm text-muted-color mb-3">Click a bar to filter the other charts.</p>
           <D3BarChart
             :data="localityCounts"
             :selected="selectedLocality"
@@ -166,7 +166,7 @@ function monthLabel(key) {
         </div>
         <div class="card">
           <h2 class="text-lg font-semibold mb-1">By project goal</h2>
-          <p class="text-sm text-gray-500 mb-3">Click a bar to filter the other charts.</p>
+          <p class="text-sm text-muted-color mb-3">Click a bar to filter the other charts.</p>
           <D3BarChart
             :data="goalCounts"
             :selected="selectedGoal"
@@ -189,7 +189,7 @@ function monthLabel(key) {
             @click="selectedRange = null"
           />
         </div>
-        <p class="text-sm text-gray-500 mb-3">Drag across the chart to filter by date range.</p>
+        <p class="text-sm text-muted-color mb-3">Drag across the chart to filter by date range.</p>
         <D3TimeSeries
           :data="monthCounts"
           :selected-range="selectedRange"
@@ -200,7 +200,7 @@ function monthLabel(key) {
       </div>
 
       <details class="card">
-        <summary class="cursor-pointer text-sm text-gray-500">
+        <summary class="cursor-pointer text-sm text-muted-color">
           View current breakdown as tables
         </summary>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-3">

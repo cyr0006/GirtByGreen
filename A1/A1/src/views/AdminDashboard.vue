@@ -154,7 +154,7 @@ function confirmDeleteAccount(account) {
     <BlurText tag="h1" text="Admin Dashboard" class="text-4xl font-bold mb-2" />
     <TypeText
       tag="p"
-      class="text-gray-500 mb-4"
+      class="text-muted-color mb-4"
       text="An overview of accounts and activity across GirtByGreen."
       :loop="false"
       :typing-speed="20"
@@ -186,7 +186,7 @@ function confirmDeleteAccount(account) {
 
       <div class="card">
         <h2 class="text-xl font-semibold mb-4">Users by account type</h2>
-        <div v-if="stats.usersByRole.length === 0" class="text-gray-500 py-8 text-center">
+        <div v-if="stats.usersByRole.length === 0" class="text-muted-color py-8 text-center">
           No users found.
         </div>
         <template v-else>
@@ -195,7 +195,7 @@ function confirmDeleteAccount(account) {
           </div>
 
           <details class="mt-4">
-            <summary class="cursor-pointer text-sm text-gray-500">View as table</summary>
+            <summary class="cursor-pointer text-sm text-muted-color">View as table</summary>
             <table class="dashboard-table mt-2">
               <thead>
                 <tr>
@@ -217,7 +217,7 @@ function confirmDeleteAccount(account) {
       <div class="card mt-6">
         <h2 class="text-xl font-semibold mb-4">Manage accounts</h2>
         <Message v-if="accountsError" severity="error" class="mb-4">{{ accountsError }}</Message>
-        <div v-if="!accounts.length" class="text-gray-500 py-8 text-center">No accounts found.</div>
+        <div v-if="!accounts.length" class="text-muted-color py-8 text-center">No accounts found.</div>
         <div v-else class="overflow-x-auto">
           <table class="dashboard-table">
             <thead>
@@ -245,7 +245,7 @@ function confirmDeleteAccount(account) {
                     :value="account.status === 'pending' ? 'Pending approval' : 'Approved'"
                     :severity="account.status === 'pending' ? 'warn' : 'success'"
                   />
-                  <span v-else class="text-gray-400">—</span>
+                  <span v-else class="text-muted-color">—</span>
                 </td>
                 <td>
                   <div class="flex gap-2 justify-end">
