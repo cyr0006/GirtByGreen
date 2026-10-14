@@ -8,6 +8,7 @@ import Bolt from '@primeicons/vue/bolt'
 import Calendar from '@primeicons/vue/calendar'
 import ChartBar from '@primeicons/vue/chart-bar'
 import hero from '@/components/hero.vue'
+import TextLoop from '@/components/TextLoop.vue'
 
 const router = useRouter()
 
@@ -82,6 +83,18 @@ const highlights = [
 
 <template>
   <hero />
+
+  <div class="home-divider" aria-hidden="true"></div>
+
+  <section class="py-8 px-8 max-w-5xl mx-auto">
+    <TextLoop
+      text="Empowering Communities, One Tree at a Time"
+      shape="wave"
+      :ribbon="false"
+      color="#15803d"
+      :font-size="28"
+    />
+  </section>
 
   <div class="home-divider" aria-hidden="true"></div>
 
