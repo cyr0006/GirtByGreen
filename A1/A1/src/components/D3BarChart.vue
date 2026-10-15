@@ -36,7 +36,7 @@ function render() {
   const height = horizontal ? Math.max(140, data.length * 32 + 16) : 260
   const margin = horizontal
     ? { top: 4, right: 36, bottom: 4, left: 112 }
-    : { top: 8, right: 8, bottom: 48, left: 32 }
+    : { top: 8, right: 8, bottom: 56, left: 36 }
 
   const innerWidth = Math.max(10, width - margin.left - margin.right)
   const innerHeight = Math.max(10, height - margin.top - margin.bottom)
@@ -57,6 +57,12 @@ function render() {
   function tooltipHtml(d) {
     const pct = ((d.count / total) * 100).toFixed(1)
     return `<strong>${d.label}</strong><br>${d.count} project${d.count === 1 ? '' : 's'} (${pct}%)`
+  }
+  // Goal labels are free text (up to 300 chars) - no fixed margin fits that,
+  // so axis ticks are truncated and the full label is still available via
+  // the native <title> tooltip and the on-hover chart tooltip.
+  function truncateLabel(label, max = 14) {
+    return label.length > max ? `${label.slice(0, max - 1)}…` : label
   }
   function wire(selection) {
     return selection
@@ -110,6 +116,10 @@ function render() {
       .attr('transform', 'rotate(-25)')
       .style('text-anchor', 'end')
       .attr('font-size', 10)
+      .text((d) => truncateLabel(d))
+      .each(function (d) {
+        d3.select(this).append('title').text(d)
+      })
 
     const bars = g.append('g').selectAll('rect').data(data, (d) => d.label).join('rect')
     wire(bars)
