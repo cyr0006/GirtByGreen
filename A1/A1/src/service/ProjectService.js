@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   getDocs,
   query,
   where,
@@ -26,6 +27,7 @@ function withTimeout(promise, ms) {
 }
 
 const sendProjectChatMessageCallable = httpsCallable(functions, 'sendProjectChatMessage')
+const deleteProjectCallable = httpsCallable(functions, 'deleteProject')
 
 export const ProjectService = {
   async createProject({ address, lat, lng, locality, goal, conditions }) {
@@ -48,6 +50,21 @@ export const ProjectService = {
       5000,
     )
     return ref.id
+  },
+
+  // Goal/conditions only - the address (and the enrichment derived from it)
+  // is immutable after creation; Firestore rules enforce the same split.
+  async updateProject(projectId, { goal, conditions }) {
+    const uid = auth.currentUser?.uid
+    if (!uid) throw new Error('You must be signed in to edit a project.')
+    await withTimeout(updateDoc(doc(db, 'projects', projectId), { goal, conditions }), 5000)
+  },
+
+  // Owner-only (enforced server-side) - also removes the chat message
+  // history, which a plain client delete of the project doc can't reach.
+  async deleteProject(projectId) {
+    const result = await deleteProjectCallable({ projectId })
+    return result.data
   },
 
   async getProject(projectId) {

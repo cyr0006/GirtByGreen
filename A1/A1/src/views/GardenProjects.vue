@@ -7,6 +7,8 @@ import Dialog from 'primevue/dialog'
 import AutoComplete from 'primevue/autocomplete'
 import Textarea from 'primevue/textarea'
 import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
+import ExclamationTriangle from '@primeicons/vue/exclamation-triangle'
 import { useAuth } from '@/composables/useAuth'
 import { useAddressSearch } from '@/composables/useAddressSearch'
 import { ProjectService } from '@/service/ProjectService'
@@ -15,6 +17,7 @@ import BlurText from '@/components/BlurText.vue'
 import TypeText from '@/components/TypeText.vue'
 
 const router = useRouter()
+const confirm = useConfirm()
 const { user } = useAuth()
 const { addressSuggestions, addressError, searchAddress } = useAddressSearch()
 
@@ -44,10 +47,21 @@ const errors = ref({})
 const newProject = ref({ goal: '', conditions: '' })
 const submitting = ref(false)
 const submitError = ref('')
+const editingProjectId = ref(null)
 
 function openDialog() {
+  editingProjectId.value = null
   selectedAddress.value = null
   newProject.value = { goal: '', conditions: '' }
+  errors.value = {}
+  submitError.value = ''
+  showDialog.value = true
+}
+
+function openEditDialog(project) {
+  editingProjectId.value = project.id
+  selectedAddress.value = null
+  newProject.value = { goal: project.goal, conditions: project.conditions }
   errors.value = {}
   submitError.value = ''
   showDialog.value = true
@@ -56,7 +70,9 @@ function openDialog() {
 function validate() {
   errors.value = {}
 
-  if (!selectedAddress.value?.lat) {
+  // Address is only chosen (and validated) on create - it's immutable once
+  // the project exists, so the picker isn't shown when editing.
+  if (!editingProjectId.value && !selectedAddress.value?.lat) {
     errors.value.address = 'Please select an address from the suggestions.'
   }
 
@@ -79,27 +95,62 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
-async function createProject() {
+async function saveProject() {
   if (!validate()) return
   submitting.value = true
   submitError.value = ''
   try {
-    const id = await ProjectService.createProject({
-      address: selectedAddress.value.label,
-      lat: selectedAddress.value.lat,
-      lng: selectedAddress.value.lng,
-      locality: selectedAddress.value.locality,
-      goal: trimmed(newProject.value.goal),
-      conditions: trimmed(newProject.value.conditions),
-    })
-    showDialog.value = false
-    router.push(`/my-garden-projects/${id}`)
+    if (editingProjectId.value) {
+      await ProjectService.updateProject(editingProjectId.value, {
+        goal: trimmed(newProject.value.goal),
+        conditions: trimmed(newProject.value.conditions),
+      })
+      showDialog.value = false
+      await loadProjects()
+    } else {
+      const id = await ProjectService.createProject({
+        address: selectedAddress.value.label,
+        lat: selectedAddress.value.lat,
+        lng: selectedAddress.value.lng,
+        locality: selectedAddress.value.locality,
+        goal: trimmed(newProject.value.goal),
+        conditions: trimmed(newProject.value.conditions),
+      })
+      showDialog.value = false
+      router.push(`/my-garden-projects/${id}`)
+    }
   } catch (err) {
-    console.error('Failed to create project:', err)
-    submitError.value = 'Could not create this project right now. Please try again.'
+    console.error(`Failed to ${editingProjectId.value ? 'update' : 'create'} project:`, err)
+    submitError.value = `Could not ${editingProjectId.value ? 'update' : 'create'} this project right now. Please try again.`
   } finally {
     submitting.value = false
   }
+}
+
+const deleteBusyId = ref('')
+
+async function deleteProjectNow(project) {
+  deleteBusyId.value = project.id
+  try {
+    await ProjectService.deleteProject(project.id)
+    projects.value = projects.value.filter((p) => p.id !== project.id)
+  } catch (err) {
+    console.error('Failed to delete project:', err)
+    loadError.value = 'Could not delete this project right now. Please try again.'
+  } finally {
+    deleteBusyId.value = ''
+  }
+}
+
+function confirmDeleteProject(project) {
+  confirm.require({
+    header: 'Delete project',
+    message: `Delete the garden project at "${project.address}"? This cannot be undone.`,
+    icon: ExclamationTriangle,
+    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: 'Cancel', severity: 'secondary' },
+    accept: () => deleteProjectNow(project),
+  })
 }
 
 function formatDate(timestamp) {
@@ -147,19 +198,38 @@ function formatDate(timestamp) {
           </p>
         </template>
         <template #footer>
-          <Button label="Open chat" size="small" />
+          <div class="flex items-center justify-between gap-2">
+            <Button label="Open chat" size="small" @click.stop="router.push(`/my-garden-projects/${project.id}`)" />
+            <div class="flex items-center gap-2">
+              <Button
+                label="Edit"
+                size="small"
+                severity="secondary"
+                outlined
+                @click.stop="openEditDialog(project)"
+              />
+              <Button
+                label="Delete"
+                size="small"
+                severity="danger"
+                outlined
+                :loading="deleteBusyId === project.id"
+                @click.stop="confirmDeleteProject(project)"
+              />
+            </div>
+          </div>
         </template>
       </Card>
     </div>
 
     <Dialog
       v-model:visible="showDialog"
-      header="New Garden Project"
+      :header="editingProjectId ? 'Edit Garden Project' : 'New Garden Project'"
       modal
       :style="{ width: '30rem' }"
     >
       <div class="flex flex-col gap-4 mt-4">
-        <div class="flex flex-col gap-1">
+        <div v-if="!editingProjectId" class="flex flex-col gap-1">
           <label for="project-address" class="text-sm font-medium">Address</label>
           <AutoComplete
             id="project-address"
@@ -212,7 +282,11 @@ function formatDate(timestamp) {
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" text @click="showDialog = false" />
-        <Button label="Create Project" :loading="submitting" @click="createProject" />
+        <Button
+          :label="editingProjectId ? 'Save Changes' : 'Create Project'"
+          :loading="submitting"
+          @click="saveProject"
+        />
       </template>
     </Dialog>
   </div>

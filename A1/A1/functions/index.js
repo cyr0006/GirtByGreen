@@ -650,6 +650,39 @@ exports.deleteUserAccount = onCall(async (request) => {
   return { success: true }
 })
 
+// Deletes a garden project along with its chat message history. Owner-only
+// (not admin - there's no admin UI for other users' projects in scope) -
+// client writes to the messages subcollection are blocked entirely, so that
+// cleanup has to happen here rather than via a plain client-side deleteDoc.
+exports.deleteProject = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'You must be signed in to delete a project.')
+  }
+
+  const { projectId } = request.data || {}
+  if (typeof projectId !== 'string' || !projectId.trim()) {
+    throw new HttpsError('invalid-argument', 'A valid projectId is required.')
+  }
+
+  const db = admin.firestore()
+  const projectRef = db.collection('projects').doc(projectId)
+  const projectSnap = await projectRef.get()
+  if (!projectSnap.exists) {
+    throw new HttpsError('not-found', 'This project no longer exists.')
+  }
+  if (projectSnap.data().ownerId !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'You do not have access to this project.')
+  }
+
+  const messagesSnap = await projectRef.collection('messages').get()
+  const batch = db.batch()
+  messagesSnap.docs.forEach((messageDoc) => batch.delete(messageDoc.ref))
+  batch.delete(projectRef)
+  await batch.commit()
+
+  return { success: true }
+})
+
 // Deletes an event along with every booking mirror that points at it (the
 // events/{id}/bookings docs and each booked user's users/{uid}/myBookings
 // entry), so no stale references are left behind. Admin-only.

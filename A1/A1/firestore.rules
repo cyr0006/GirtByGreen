@@ -34,11 +34,28 @@ service cloud.firestore {
       allow read: if true;  // public event listing, signed in or not
       allow create: if request.auth != null
                    && isApprovedOrg(request.auth.uid)
-                   && request.resource.data.bookedCount == 0;
-      // bookedCount only ever changes via bookEvent/cancelBooking; deletion
-      // is admin-only via the deleteEvent function - both use the Admin SDK,
-      // which bypasses these rules, so client writes stay blocked entirely.
-      allow update, delete: if false;
+                   && request.resource.data.bookedCount == 0
+                   && request.resource.data.createdBy == request.auth.uid;
+      // Only the approved-org creator can edit their own event, and only
+      // the descriptive fields - createdBy/bookedCount are pinned so this
+      // can't be used to steal ownership or forge the live booking count
+      // (that only ever changes via bookEvent/cancelBooking's Admin SDK
+      // transaction). Capacity can't be dropped below people already
+      // booked, and the date is locked once someone has booked, since
+      // changing it would silently desync each booker's myBookings mirror
+      // (used for the same-day conflict check in bookEvent).
+      allow update: if request.auth != null
+                   && isApprovedOrg(request.auth.uid)
+                   && resource.data.createdBy == request.auth.uid
+                   && request.resource.data.createdBy == resource.data.createdBy
+                   && request.resource.data.bookedCount == resource.data.bookedCount
+                   && request.resource.data.capacity >= resource.data.bookedCount
+                   && (resource.data.bookedCount == 0
+                       || request.resource.data.date == resource.data.date);
+      // Deletion is admin-only via the deleteEvent function (Admin SDK) -
+      // it also has to clean up booking mirrors, which a plain client
+      // delete can't do.
+      allow delete: if false;
 
       match /bookings/{userId} {
         allow read: if request.auth != null && request.auth.uid == userId;
@@ -48,7 +65,24 @@ service cloud.firestore {
     match /projects/{projectId} {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if false;  // enrichment is server-only; no edit/delete flow in scope
+      // Owner can edit their own project, but only goal/conditions - the
+      // address (and the lat/lng/locality/enrichment derived from it) is
+      // pinned so this can't be used to move the project to a different
+      // address without going through geocoding again, and so cached
+      // suburb/species enrichment can never go stale or be forged.
+      allow update: if request.auth != null
+                   && resource.data.ownerId == request.auth.uid
+                   && request.resource.data.ownerId == resource.data.ownerId
+                   && request.resource.data.address == resource.data.address
+                   && request.resource.data.lat == resource.data.lat
+                   && request.resource.data.lng == resource.data.lng
+                   && request.resource.data.locality == resource.data.locality
+                   && request.resource.data.enrichment == resource.data.enrichment
+                   && request.resource.data.createdAt == resource.data.createdAt;
+      // Deletion is owner-only via the deleteProject function (Admin SDK) -
+      // it also deletes the messages subcollection, which a plain client
+      // delete of the parent doc wouldn't touch.
+      allow delete: if false;
 
       match /messages/{messageId} {
         allow read: if request.auth != null &&

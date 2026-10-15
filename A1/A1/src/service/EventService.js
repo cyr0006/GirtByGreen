@@ -2,6 +2,8 @@ import {
   getFirestore,
   collection,
   addDoc,
+  doc,
+  updateDoc,
   onSnapshot,
   query,
   orderBy,
@@ -35,6 +37,21 @@ export const EventService = {
       createdAt: serverTimestamp(),
     })
     return ref.id
+  },
+
+  // Org-only, own-event-only (enforced by Firestore rules) - bookedCount
+  // isn't accepted here since the rules pin it to its current value anyway.
+  async updateEvent(eventId, { title, date, location, description, capacity, category }) {
+    const uid = auth.currentUser?.uid
+    if (!uid) throw new Error('You must be signed in to edit an event.')
+    await updateDoc(doc(db, 'events', eventId), {
+      title,
+      date,
+      location,
+      description,
+      capacity,
+      category,
+    })
   },
 
   // Real-time so a booking (yours or anyone else's) updates spots-remaining

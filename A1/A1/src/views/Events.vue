@@ -101,6 +101,9 @@ function isFull(event) {
 function isBooked(event) {
   return myBookingIds.value.has(event.id)
 }
+function canEdit(event) {
+  return isOrg.value && user.value && event.createdBy === user.value.uid
+}
 
 const viewOptions = [
   { label: 'List', value: 'list' },
@@ -200,10 +203,27 @@ const newEvent = ref({
   category: '',
 })
 const creating = ref(false)
+const editingEvent = ref(null)
 
 function openDialog() {
   if (!isOrg.value) return
+  editingEvent.value = null
   newEvent.value = { title: '', date: '', location: '', description: '', capacity: 0, category: '' }
+  errors.value = {}
+  showDialog.value = true
+}
+
+function openEditDialog(event) {
+  if (!canEdit(event)) return
+  editingEvent.value = event
+  newEvent.value = {
+    title: event.title,
+    date: event.date,
+    location: event.location,
+    description: event.description,
+    capacity: event.capacity,
+    category: event.category,
+  }
   errors.value = {}
   showDialog.value = true
 }
@@ -247,6 +267,8 @@ function validate() {
     errors.value.capacity = 'Spots must be a whole number.'
   } else if (newEvent.value.capacity > 100000) {
     errors.value.capacity = 'Spots must be 100,000 or fewer.'
+  } else if (editingEvent.value && newEvent.value.capacity < editingEvent.value.bookedCount) {
+    errors.value.capacity = `Spots can't be fewer than the ${editingEvent.value.bookedCount} already booked.`
   }
 
   if (!newEvent.value.category) {
@@ -256,22 +278,29 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
-async function addEvent() {
+async function submitEvent() {
   if (!isOrg.value) return
   if (!validate()) return
   creating.value = true
   try {
-    await EventService.createEvent({
+    const payload = {
       title: trimmed(newEvent.value.title),
       date: newEvent.value.date,
       location: trimmed(newEvent.value.location),
       description: trimmed(newEvent.value.description),
       capacity: newEvent.value.capacity,
       category: newEvent.value.category,
-    })
+    }
+    if (editingEvent.value) {
+      await EventService.updateEvent(editingEvent.value.id, payload)
+    } else {
+      await EventService.createEvent(payload)
+    }
     showDialog.value = false
   } catch (err) {
-    errors.value.submit = err?.message || 'Could not create this event. Please try again.'
+    errors.value.submit =
+      err?.message ||
+      `Could not ${editingEvent.value ? 'update' : 'create'} this event. Please try again.`
   } finally {
     creating.value = false
   }
@@ -364,6 +393,14 @@ function formatDate(dateStr) {
             </span>
             <div class="flex items-center gap-2">
               <Button
+                v-if="canEdit(event)"
+                label="Edit"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="openEditDialog(event)"
+              />
+              <Button
                 v-if="isAdmin"
                 label="Delete"
                 size="small"
@@ -421,6 +458,13 @@ function formatDate(dateStr) {
       <template #footer>
         <Button label="Close" severity="secondary" text @click="showDetails = false" />
         <Button
+          v-if="detailsEvent && canEdit(detailsEvent)"
+          label="Edit"
+          severity="secondary"
+          outlined
+          @click="openEditDialog(detailsEvent)"
+        />
+        <Button
           v-if="detailsEvent && isAdmin"
           label="Delete"
           severity="danger"
@@ -445,7 +489,12 @@ function formatDate(dateStr) {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="showDialog" header="Add New Event" modal :style="{ width: '28rem' }">
+    <Dialog
+      v-model:visible="showDialog"
+      :header="editingEvent ? 'Edit Event' : 'Add New Event'"
+      modal
+      :style="{ width: '28rem' }"
+    >
       <div class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1">
           <label for="event-title" class="text-sm font-medium">Title</label>
@@ -465,10 +514,17 @@ function formatDate(dateStr) {
             id="event-date"
             v-model="newEvent.date"
             type="date"
+            :disabled="editingEvent && editingEvent.bookedCount > 0"
             :invalid="!!errors.date"
-            :aria-describedby="errors.date ? 'event-date-error' : undefined"
+            :aria-describedby="errors.date ? 'event-date-error' : 'event-date-hint'"
           />
           <small v-if="errors.date" id="event-date-error" class="text-red-500">{{ errors.date }}</small>
+          <small
+            v-else-if="editingEvent && editingEvent.bookedCount > 0"
+            id="event-date-hint"
+            class="text-surface-400"
+            >Date is locked once people have booked.</small
+          >
         </div>
         <div class="flex flex-col gap-1">
           <label for="event-location" class="text-sm font-medium">Location</label>
@@ -534,7 +590,11 @@ function formatDate(dateStr) {
       </div>
       <template #footer>
         <Button label="Cancel" severity="secondary" text @click="showDialog = false" />
-        <Button label="Add Event" :loading="creating" @click="addEvent" />
+        <Button
+          :label="editingEvent ? 'Save Changes' : 'Add Event'"
+          :loading="creating"
+          @click="submitEvent"
+        />
       </template>
     </Dialog>
   </div>
