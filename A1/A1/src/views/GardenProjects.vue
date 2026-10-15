@@ -173,8 +173,12 @@ function formatDate(timestamp) {
             :aria-describedby="errors.address || addressError ? 'address-error' : undefined"
             @complete="searchAddress"
           />
-          <small v-if="errors.address" id="address-error" class="text-red-500">{{ errors.address }}</small>
-          <small v-else-if="addressError" id="address-error" class="text-red-500">{{ addressError }}</small>
+          <small v-if="errors.address" id="address-error" class="text-red-500">{{
+            errors.address
+          }}</small>
+          <small v-else-if="addressError" id="address-error" class="text-red-500">{{
+            addressError
+          }}</small>
         </div>
         <div class="flex flex-col gap-1">
           <label for="project-goal" class="text-sm font-medium">Goal</label>
@@ -200,7 +204,9 @@ function formatDate(timestamp) {
             :invalid="!!errors.conditions"
             :aria-describedby="errors.conditions ? 'conditions-error' : undefined"
           />
-          <small v-if="errors.conditions" id="conditions-error" class="text-red-500">{{ errors.conditions }}</small>
+          <small v-if="errors.conditions" id="conditions-error" class="text-red-500">{{
+            errors.conditions
+          }}</small>
         </div>
         <Message v-if="submitError" severity="error" :closable="false">{{ submitError }}</Message>
       </div>

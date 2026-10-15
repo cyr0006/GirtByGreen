@@ -289,7 +289,7 @@ function formatDate(dateStr) {
 
 <template>
   <div class="py-20 px-8 max-w-6xl mx-auto">
-    <div class="mb-12 text-left">
+    <div class="mb-6 text-left">
       <BlurText tag="h1" text="Upcoming Events" class="text-4xl font-bold mb-2" />
       <TypeText
         tag="p"
@@ -298,8 +298,12 @@ function formatDate(dateStr) {
         :loop="false"
         :typing-speed="20"
       />
-      <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" />
+      </br>
     </div>
+    <div class="mb-12 text-left">
+            <Button v-if="isOrg" icon="pi pi-plus" label="Add Event" @click="openDialog" /> 
+    </div>
+
 
     <Message v-if="actionError" severity="error" closable @close="actionError = ''" class="mb-6">
       {{ actionError }}
