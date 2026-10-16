@@ -1,44 +1,80 @@
-# A1
+# GirtByGreen
 
-This template should help get you started developing with Vue 3 in Vite.
+GirtByGreen is a web app that helps Melbourne communities green their own patch of the city, one street, one garden, one tree at a time. It brings together suburb-level vegetation and heat data, a native plant catalog with grower reviews, an AI garden advisor, and local planting events in one place.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Vegetation Map** - explore tree cover, heat vulnerability and biodiversity across Melbourne suburbs on an interactive map.
+- **Suburb Canopy Data** - compare vegetation cover and heat vulnerability figures across suburbs, sourced from Victoria's Vicmap and CoolingGreening datasets.
+- **Click, Read, Plant** - browse a native plant catalog, filter by growing needs, and read reviews from other growers.
+- **AI Garden Advisor** - chat with an AI assistant for planting advice tailored to your own garden project.
+- **Events** - find and join community planting days, workshops and clean-up drives.
+- **Community Impact** - track how many garden projects the community has completed over time.
+- **Accounts and roles** - sign up and sign in with Firebase Authentication, manage your profile, and an admin dashboard for managing content and users.
 
-## Recommended Browser Setup
+## Tech stack
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- **Frontend:** Vue 3, Vite, Vue Router, PrimeVue, Tailwind CSS
+- **Data and visualisation:** Chart.js, D3, Leaflet (with marker clustering), FullCalendar
+- **Backend:** Firebase (Authentication, Firestore, Cloud Functions, Hosting)
+- **Other services:** SendGrid for email, Groq for AI chat
+- **Editor:** Quill for rich text content, sanitized with DOMPurify / sanitize-html
 
-## Customize configuration
+## Getting started
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Requirements
 
-## Project Setup
+- Node.js `^22.18.0` or `>=24.12.0`
+- A Firebase project (for Authentication, Firestore and Cloud Functions)
+
+### Installation
 
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Development
 
 ```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+### Build for production
 
 ```sh
 npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### Preview the production build
+
+```sh
+npm run preview
+```
+
+### Lint and format
 
 ```sh
 npm run lint
+npm run format
 ```
+
+## Project structure
+
+```
+src/
+  views/        # Page-level components (Home, Events, VegetationMap, Profile, etc.)
+  components/    # Reusable UI components
+  composables/   # Shared Vue composables (e.g. auth state)
+  router/        # Vue Router setup and route guards
+  service/       # API and data access helpers
+  firebase.js    # Firebase app initialisation
+functions/       # Firebase Cloud Functions (email sending, AI chat, etc.)
+```
+
+## Deployment
+
+The app is hosted on Firebase Hosting, with Firestore for data and Cloud Functions for server-side logic such as sending emails and sanitizing content. Firebase configuration lives in `firebase.json` and `firestore.rules`.
+
+## License
+
+This project was built for Monash University's FIT5032 unit and is not licensed for external use.
